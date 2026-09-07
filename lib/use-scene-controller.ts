@@ -27,15 +27,17 @@ const initialContext: Context = { driving: false, profile: 'none' };
 type Source = 'live' | 'example';
 type Toast = { text: string; error?: boolean };
 
-export function useSceneController() {
+export function useSceneController(initialExample = true) {
   const profileSettings = useRef(emptyProfileSettings());
   const [ctx, setCtx] = useState<Context>(initialContext);
   const [result, setResult] = useState<SceneResult | null>(() =>
-    validateScene(
-      exampleScene('wait', initialContext),
-      initialContext,
-      EXAMPLES[1].input,
-    ),
+    initialExample
+      ? validateScene(
+          exampleScene('wait', initialContext),
+          initialContext,
+          EXAMPLES[1].input,
+        )
+      : null,
   );
   const [heard, setHeard] = useState(EXAMPLES[1].input),
     [input, setInput] = useState(''),
@@ -111,11 +113,13 @@ export function useSceneController() {
       };
       setCtx(restored);
       setResult(
-        validateScene(
-          exampleScene('wait', restored),
-          restored,
-          EXAMPLES[1].input,
-        ),
+        initialExample
+          ? validateScene(
+              exampleScene('wait', restored),
+              restored,
+              EXAMPLES[1].input,
+            )
+          : null,
       );
     } catch {
       showToast('浏览器存储不可用，保存功能暂时不可用', true);
@@ -194,10 +198,7 @@ export function useSceneController() {
     const id = ++requestId.current;
     const controller = new AbortController();
     abort.current = controller;
-    const previous =
-      !forceNew && (editing || !!result?.scene.clarify)
-        ? result?.scene
-        : undefined;
+    const previous = !forceNew ? result?.scene : undefined;
     setError('');
     setStatus('');
     setInput(query);

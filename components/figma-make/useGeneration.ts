@@ -1,0 +1,176 @@
+'use client';
+import { useMemo, useRef, useState } from 'react';
+import { useSceneController } from '@/lib/use-scene-controller';
+import {
+  toViewResult,
+  toViewSaved,
+  CORE_PROFILE,
+  VIEW_PROFILE,
+  MEMORY_CONTENT,
+} from './bridge';
+import { PROFILES } from './domain/profiles';
+import type { DrivingState, SavedScene } from './domain/types';
+
+/** Figma Make's component API, connected to the existing real generation service. */
+export function useGeneration() {
+  const c = useSceneController(false);
+  const [saveVersion, setSaveVersion] = useState(0);
+  const lastRequest = useRef<{
+    text: string;
+    fresh: boolean;
+    source?: 'example' | 'live';
+  } | null>(null);
+  const result = useMemo(
+    () => (c.result ? toViewResult(c.result) : null),
+    [c.result],
+  );
+  const profileId = VIEW_PROFILE[c.ctx.profile];
+  const removedPrefs = Object.keys(MEMORY_CONTENT).filter((id) =>
+    c.ctx.ignoredMemories?.includes(MEMORY_CONTENT[id]),
+  );
+  const profile = {
+    ...PROFILES.find((p) => p.id === profileId)!,
+    preferences: PROFILES.find((p) => p.id === profileId)!.preferences.filter(
+      (p) => !removedPrefs.includes(p.id),
+    ),
+  };
+  const mode: 'real' | 'example' = c.mode === 'live' ? 'real' : 'example';
+  const phase = c.busy
+    ? 'thinking'
+    : c.error
+      ? 'error'
+      : result
+        ? 'result'
+        : 'idle';
+  async function request(
+    text: string,
+    fresh: boolean,
+    source?: 'example' | 'live',
+  ) {
+    if (!text.trim()) return;
+    if (c.ctx.driving) {
+      c.showToast('提案已保留，停车后继续创建与编辑');
+      return;
+    }
+    lastRequest.current = { text, fresh, source };
+    return c.run(text, fresh, source);
+  }
+  function handleSave() {
+    try {
+      c.saveCurrent();
+      c.setEditing(false);
+      setSaveVersion((v) => v + 1);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  const error = c.error
+    ? {
+        message: c.error,
+        hint:
+          mode === 'example'
+            ? '示例只回放预设案例；自由表达需要连接真实 AI。'
+            : '输入已保留，可重试或在设置中检查连接。',
+        canRetry: mode === 'real',
+      }
+    : null;
+  return {
+    phase,
+    scene: result?.scene || null,
+    result,
+    rawResult: c.result,
+    source: (c.source === 'live' ? 'ai' : 'example') as 'ai' | 'example',
+    input: c.input,
+    setInput: c.setInput,
+    heard: c.heard,
+    understanding: c.busy ? c.streamText : result?.scene.understanding || null,
+    slow: c.busy && c.elapsed >= 2.5,
+    status: c.status,
+    error,
+    mode,
+    setMode: (m: 'real' | 'example') => {
+      c.cancel();
+      c.setError('');
+      c.setMode(m === 'real' ? 'live' : 'example');
+    },
+    model: c.model,
+    setModel: c.setModel,
+    models: c.models,
+    loadModels: c.loadModels,
+    configured: c.configured,
+    catalogLoading: c.catalogLoading,
+    connectionNote: c.catalogError,
+    connection:
+      mode === 'example'
+        ? ('example' as const)
+        : c.catalogError
+          ? ('error' as const)
+          : c.configured
+            ? ('connected' as const)
+            : ('not-connected' as const),
+    driving: (c.ctx.driving ? 'driving' : 'parked') as DrivingState,
+    setDriving: (v: DrivingState) =>
+      c.changeContext({ ...c.ctx, driving: v === 'driving' }),
+    profileId,
+    profile,
+    removedPrefs,
+    setProfileId: (id: string) => c.selectProfile(CORE_PROFILE[id] || 'none'),
+    togglePref: (id: string) => {
+      const content = MEMORY_CONTENT[id];
+      if (content) {
+        if (c.ctx.ignoredMemories?.includes(content)) c.restoreMemory(content);
+        else c.removeMemory(content);
+      }
+    },
+    latency:
+      c.source === 'live' && c.timing
+        ? {
+            t0: 0,
+            understandingStart:
+              c.timing.ttft == null ? undefined : c.timing.ttft * 1000,
+            understandingDone:
+              c.timing.understanding == null
+                ? undefined
+                : c.timing.understanding * 1000,
+            complete: c.timing.total * 1000,
+          }
+        : {},
+    changedIds: new Set(c.result?.changed || []),
+    saved: c.isSaved,
+    saveVersion,
+    editing: c.editing,
+    setEditing: c.setEditing,
+    editText: c.input,
+    setEditText: c.setInput,
+    clarifyText: c.input,
+    setClarifyText: c.setInput,
+    submitInput: (text = c.input) =>
+      request(text, !c.editing && !c.result?.scene.clarify),
+    submitEdit: () => request(c.input, false),
+    submitClarify: () => request(c.input, false),
+    playExample: (text: string) => {
+      c.setMode('example');
+      return request(text, true, 'example');
+    },
+    retry: () =>
+      lastRequest.current
+        ? request(
+            lastRequest.current.text,
+            lastRequest.current.fresh,
+            lastRequest.current.source,
+          )
+        : undefined,
+    reset: c.discard,
+    cancel: c.cancel,
+    handleSave,
+    scenes: c.saved.map(toViewSaved),
+    remove: c.deleteSaved,
+    openSaved: (s: SavedScene) => {
+      const stored = c.saved.find((x) => x.id === s.id);
+      if (stored) c.openSaved(stored);
+    },
+    controller: c,
+  };
+}
+export type Generation = ReturnType<typeof useGeneration>;
