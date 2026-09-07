@@ -6,7 +6,7 @@ v17 版本以用户上传的 Figma Make「Card Stack」为视觉基础，保留�
 
 1920×1080 显示器可切换驾驶员视角与正视阅读。主要正文 22–24px、标题 30–36px；完整提案 700px、命令栏 780px、侧栏 320px、应用编辑窗 760px。动作仍是同一张卡片里的行，空分组隐藏。
 
-[旧版 v16 备份](https://scene-studio-demo-v16.vercel.app) · [备份标签](https://github.com/hadan8977/scene-studio-demo/tree/backup/v16-7e13263) · [本轮执行计划](docs/v17-implementation-plan.md) · [实现与验证记录](docs/v17-validation.md)
+[旧版 v16 备份](https://scene-studio-v16-7e13263.vercel.app) · [备份标签](https://github.com/hadan8977/scene-studio-demo/tree/backup/v16-7e13263) · [本轮执行计划](docs/v17-implementation-plan.md) · [实现与验证记录](docs/v17-validation.md)
 
 明确要求创建场景时，查看理解句、条件和组合动作。只描述处境时，先回应，再轻问是否安排；明确调灯调温则交给车控，不生成场景。卡片的「改一下」进入局部续改，保存与应用一次分别操作。
 

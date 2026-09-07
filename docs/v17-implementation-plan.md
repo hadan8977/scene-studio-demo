@@ -9,7 +9,7 @@
 - 本地备份目录：`backups/scene-studio-v16-7e13263`，包含 `source.zip` 和验证通过的 `repository.bundle`。
 - ZIP SHA256：`5D6143081BFBC88EE627AC22C2976BB85DA96209E6077EED41948530ED1D789A`。
 - 旧部署：`https://scene-studio-demo-okfn6kv1d-zhoucehuang-archs-projects.vercel.app`。
-- 备份标签已推送到同一公开仓库；旧部署绑定 https://scene-studio-demo-v16.vercel.app 。回滚通过检出标签、构建、重新部署实现，不覆盖或删除 Git 历史。
+- 备份标签已推送到同一公开仓库；备份源码在独立项目发布为 https://scene-studio-v16-7e13263.vercel.app 。回滚通过检出标签、构建、重新部署实现，不覆盖或删除 Git 历史。
 - 浏览器个人场景继续使用原存储键并兼容旧记录；本备份保存应用版本，不读取用户浏览器个人草稿。
 
 ## 2 阅读比例
