@@ -68,7 +68,9 @@ export function useGeneration() {
       return;
     }
     lastRequest.current = { text, fresh, source };
-    return fresh ? experience.submit(text, source) : c.run(text, false, source);
+    return fresh
+      ? experience.submit(text, source)
+      : c.run(text, false, source, experience.vehicle);
   }
   function handleSave(choice?: 'separate' | 'update') {
     try {
@@ -187,6 +189,11 @@ export function useGeneration() {
     submitInput: (text = c.input) => request(text, !c.result),
     submitVoice: (text = c.input) => {
       if (c.editing) return request(text, false);
+      if (c.mode === 'live' && experience.route?.kind === 'clarify') {
+        const continued = experience.route.input + '\n补充：' + text;
+        lastRequest.current = { text: continued, fresh: true };
+        return experience.submit(continued, undefined, false, 'voice');
+      }
       lastRequest.current = { text, fresh: true };
       return experience.submit(text, undefined, false, 'voice');
     },

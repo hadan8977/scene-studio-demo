@@ -73,6 +73,7 @@ export default function App() {
           rawResult={gen.rawResult}
           model={gen.model}
           modelUsed={gen.controller.modelUsed}
+          provenance={gen.controller.provenance}
           onModelChange={gen.setModel}
           driving={gen.driving}
           onDrivingChange={gen.setDriving}

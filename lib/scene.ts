@@ -56,6 +56,7 @@ export type Context = {
   profile: ProfileId;
   ignoredMemories?: string[];
   preferences?: UserPreference[];
+  vehicle?: Record<string, string>;
 };
 type Range = { range: (number | string)[] };
 type Capability = {
@@ -448,6 +449,31 @@ export function validateScene(
               : '能力与取值有效'),
         kind,
       });
+      // The model may already have clamped an explicit percentage. Keep the
+      // user's original value visible without treating free-form prose as an action.
+      if (
+        kind === 'action' &&
+        ctx.driving &&
+        (a.primary === '氛围灯亮度' || cap.group === '车窗')
+      ) {
+        const limit = a.primary === '氛围灯亮度' ? 50 : 20;
+        const match = input.match(
+          new RegExp(a.primary + '[^\\d，,。;；\\n]{0,8}(\\d+)%'),
+        );
+        if (
+          match &&
+          Number(match[1]) > limit &&
+          parseInt(a.secondary) <= limit
+        ) {
+          const decision = decisions[decisions.length - 1];
+          decision.original = match[1] + '%';
+          decision.status = 'adjusted';
+          decision.reason =
+            a.primary === '氛围灯亮度'
+              ? '行驶中氛围灯亮度不超过50%'
+              : '行驶中车窗最大开启20%';
+        }
+      }
       result.push(a);
     }
     return result;
@@ -532,6 +558,25 @@ export function validateScene(
     scene.offer = { type: 'none', target: '' };
   }
   for (const unsupported of scene.unsupported) {
+    if (
+      /行人.*(?:不可|不能|禁止|关闭)|pedestrian.*(?:off|disable)/i.test(
+        unsupported,
+      )
+    ) {
+      if (
+        !decisions.some(
+          (d) => d.primary === '低速行人警报音' && d.status === 'forbidden',
+        )
+      )
+        decisions.push({
+          primary: '低速行人警报音',
+          original: '关闭',
+          status: 'forbidden',
+          kind: 'action',
+          reason: '安全规则不允许关闭行人警报音',
+        });
+      continue;
+    }
     if (!decisions.some((d) => d.primary === unsupported))
       decisions.push({
         primary: unsupported,

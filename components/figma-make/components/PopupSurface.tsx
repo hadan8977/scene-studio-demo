@@ -119,12 +119,11 @@ export function PopupSurface({
           {active && (
             <motion.div
               key="popup"
-              layout
               data-testid="service-popup"
-              initial={{ opacity: 0, y: 40, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 40, scale: 0.96 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+              initial={false}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0 }}
               className="mb-5 flex max-h-[710px] w-[580px] flex-col overflow-hidden rounded-[24px] border border-border bg-card/95 shadow-[0_40px_120px_-20px_rgba(0,0,0,0.9)] backdrop-blur-xl [&_[data-editor-body]]:max-h-[300px]"
             >
               <div className="flex shrink-0 items-center gap-2 px-6 pb-3 pt-5">
@@ -146,6 +145,11 @@ export function PopupSurface({
               <div className="min-h-0 flex-1 overflow-hidden">
                 <Composer
                   gen={gen}
+                  surface="popup"
+                  onDiscard={() => {
+                    if (x.route?.kind === 'suggestion') x.decline();
+                    gen.reset();
+                  }}
                   onSwitchToReal={() => {
                     gen.setMode('real');
                     onReview();

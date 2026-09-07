@@ -9,7 +9,7 @@ export function VoiceFeedback({ gen }: { gen: Generation }) {
     : r?.kind === 'control'
       ? x.feedback.replace(/（演示）/g, '')
       : r?.kind === 'preset'
-        ? '这项模式暂未开放。'
+        ? x.feedback || r.reply
         : r?.kind === 'clarify'
           ? r.question
           : x.feedback === '已撤销'
@@ -18,7 +18,7 @@ export function VoiceFeedback({ gen }: { gen: Generation }) {
               ? gen.rawResult?.conceptual
                 ? '已调好，可用功能已应用。'
                 : '已调好。'
-              : x.application === 'preview' || x.application === 'applying'
+              : x.application === 'applying'
                 ? ''
                 : r?.kind === 'suggestion'
                   ? x.feedback === '这项功能暂未开放，方案已保留。'
@@ -67,7 +67,7 @@ export function VoiceFeedback({ gen }: { gen: Generation }) {
           ))}
         </div>
       )}
-      {r?.kind === 'clarify' && (
+      {r?.kind === 'clarify' && /空调.*灯光.*车窗/.test(r.question || '') && (
         <div className="mt-3 flex justify-center gap-3">
           {['空调', '灯光', '车窗'].map((t) => (
             <button

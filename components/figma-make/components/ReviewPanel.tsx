@@ -27,6 +27,7 @@ interface ReviewPanelProps {
   rawResult: SceneResult | null;
   model: string;
   modelUsed: string;
+  provenance: Record<string, unknown> | null;
   onModelChange: (m: string) => void;
   driving: DrivingState;
   onDrivingChange: (d: DrivingState) => void;
@@ -262,6 +263,26 @@ export function ReviewPanel(props: ReviewPanelProps) {
               </section>
 
               {/* 车辆状态 */}
+              <section className="space-y-2">
+                <SectionTitle>生成配置 · p13</SectionTitle>
+                <p className="text-[18px] text-muted-foreground">
+                  DeepSeek 官方 · 统一中文系统指令 · 非思考 · temperature 0 ·
+                  max_tokens 1000
+                </p>
+                <p className="text-[17px] text-muted-foreground">
+                  沿用现有能力校验；报告中的完整硬约束架构尚未接入。
+                </p>
+                {props.provenance && (
+                  <details className="text-[17px] text-muted-foreground">
+                    <summary className="cursor-pointer text-primary">
+                      本次请求配置与哈希
+                    </summary>
+                    <pre className="mt-2 whitespace-pre-wrap break-all rounded-xl bg-background p-3 font-mono text-[15px]">
+                      {JSON.stringify(props.provenance, null, 2)}
+                    </pre>
+                  </details>
+                )}
+              </section>
               <section className="space-y-2">
                 <SectionTitle>车辆状态</SectionTitle>
                 <div className="flex gap-2">

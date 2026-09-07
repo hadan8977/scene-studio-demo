@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
-import { generate, inputFrom, nonSceneRoute } from '@/lib/generation';
+import { generate, inputFrom } from '@/lib/generation';
 import { isInjection, emptyScene, validateScene } from '@/lib/scene';
 export async function POST(request: Request) {
   const origin = request.headers.get('origin');
@@ -20,18 +20,12 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const routed = nonSceneRoute(body);
-  if (routed)
-    return Response.json(
-      { error: routed.reason, route: routed.kind, executed: false },
-      { status: 422 },
-    );
-  const key = process.env.OPENROUTER_API_KEY;
+  const key = process.env.DEEPSEEK_API_KEY;
   if (!key)
     return Response.json(
       {
         error:
-          '真实 AI 尚未连接，请在服务端配置 OPENROUTER_API_KEY。示例模式仍可使用。',
+          '真实 AI 尚未连接，请在服务端配置 DEEPSEEK_API_KEY。示例模式仍可使用。',
       },
       { status: 503 },
     );

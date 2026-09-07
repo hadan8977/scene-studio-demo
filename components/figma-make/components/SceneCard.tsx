@@ -148,6 +148,13 @@ export function SceneCard(p: SceneCardProps) {
       ) : (
         <ActionRows actions={scene.actions} changedIds={p.changedIds} />
       )}
+      {scene.say && !p.editing && (
+        <div className="flex items-center gap-3 border-t border-border/50 py-2 text-[22px]">
+          <MessageSquare className="h-5 w-5 shrink-0 text-primary/75" />
+          <span className="flex-1">提醒 · {scene.say}</span>
+          <span className="text-[16px] text-muted-foreground">待接入</span>
+        </div>
+      )}
       {p.changedIds.size > 0 && !p.editing && (
         <output className="mt-2 block text-[17px] text-primary">
           已更新{' '}
@@ -234,15 +241,17 @@ export function SceneCard(p: SceneCardProps) {
       <div className="mt-4 flex gap-3 border-t border-border/60 pt-4">
         <button
           disabled={!scene.canSave || (!p.confirmApplication && p.saved)}
-          onClick={p.confirmApplication && !p.editing ? p.onApply : p.onSave}
+          onClick={p.confirmApplication ? p.onApply : p.onSave}
           className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-[14px] bg-primary text-[22px] font-medium text-primary-foreground disabled:opacity-40"
         >
           <Check className="h-5 w-5" />
-          {p.confirmApplication && !p.editing
-            ? '好'
-            : p.saved
-              ? '已保存'
-              : '保存'}
+          {p.confirmApplication ? '好' : p.saved ? '已保存' : '保存'}
+        </button>
+        <button
+          onClick={p.onDiscard}
+          className="flex min-h-[52px] items-center justify-center rounded-[14px] border border-border px-6 text-[21px] text-muted-foreground"
+        >
+          不要
         </button>
         {!p.editing && (
           <button

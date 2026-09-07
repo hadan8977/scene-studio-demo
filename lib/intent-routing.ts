@@ -6,6 +6,7 @@ import {
   type Context,
   type Entry,
   type SceneResult,
+  type Scene,
 } from './scene.ts';
 export type RouteKind =
   | 'scene'
@@ -194,6 +195,30 @@ export function controlResult(route: IntentRoute, ctx: Context) {
     },
     ctx,
     route.input,
+  );
+}
+/** A model label alone is not permission to apply a proposed scene. */
+export function isImmediateControl(route: IntentRoute, scene: Scene) {
+  if (
+    route.kind === 'scene' ||
+    route.kind === 'suggestion' ||
+    scene.conditions.length
+  )
+    return false;
+  if (route.kind === 'control') return true;
+  return (
+    scene.intent === 'action' &&
+    (route.kind === 'chat' ||
+      (route.kind === 'clarify' && /\n补充：/.test(route.input))) &&
+    !/场景|模式|如果|每当|每天|到.*时|\b(?:scene|when|every|if)\b/i.test(
+      route.input,
+    ) &&
+    /打开|开启|关掉|关闭|调|开到|升高|降低|再凉|再暖|\b(?:set|turn|open|close|lower|raise|dim)\b/i.test(
+      route.input,
+    ) &&
+    /灯|屏幕|温度|空调|音量|座椅|车窗|风量|净化|循环|加热|通风|按摩|\b(?:light|window|temperature|volume|seat|fan|air)\b/i.test(
+      route.input,
+    )
   );
 }
 export type AttentionState = {

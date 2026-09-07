@@ -5,9 +5,11 @@ import {
   routeInput,
   controlResult,
   evaluateSuggestion,
+  isImmediateControl,
   emptyAttention,
   type IntentRoute,
 } from '@/lib/intent-routing';
+import { vehicleShortcut } from '@/lib/vehicle-shortcuts';
 import { demoCase, sceneForCase } from '@/lib/demo-cases';
 import { capabilities, validateScene, type SceneResult } from '@/lib/scene';
 import { readSaved, type SavedScene } from '@/lib/storage';
@@ -51,9 +53,8 @@ export function useExperience(c: Controller) {
   const [attention, setAttention] = useState(emptyAttention);
   const [vehicle, setVehicle] = useState({ ...INITIAL_VEHICLE });
   const [application, setApplicationState] = useState<
-    'idle' | 'preview' | 'applying' | 'done'
+    'idle' | 'applying' | 'done'
   >('idle');
-  const [countdown, setCountdown] = useState(3);
   const [inbox, setInbox] = useState<SavedScene[]>([]);
   const inboxRef = useRef(inbox);
   const [reused, setReused] = useState<SavedScene | null>(null);
@@ -96,12 +97,7 @@ export function useExperience(c: Controller) {
   function stopPreview(undo = false) {
     timers.current.forEach(clearTimeout);
     timers.current = [];
-    if (
-      snapshot.current &&
-      (undo ||
-        applicationRef.current === 'preview' ||
-        applicationRef.current === 'applying')
-    ) {
+    if (snapshot.current && (undo || applicationRef.current === 'applying')) {
       const next = restore(live.current, snapshot.current);
       live.current = next;
       setVehicle(next);
@@ -203,6 +199,115 @@ export function useExperience(c: Controller) {
       setVehicle(contextVehicle);
     }
     if (source) c.setMode(source);
+    const shortcut = vehicleShortcut(input, c.ctx.driving);
+    if (shortcut) {
+      setRoute({
+        ...r,
+        kind: 'preset',
+        reply: shortcut.reply,
+        reason: '车机已有功能直达，不属于场景编排',
+      });
+      if (shortcut.applied) {
+        live.current = { ...live.current, ...shortcut.values };
+        setVehicle(live.current);
+      }
+      setFeedback(shortcut.reply);
+      c.setInput('');
+      return;
+    }
+    if ((source || c.mode) === 'live') {
+      const result = await c.run(input, true, source, contextVehicle);
+      if (id !== job.current || !result) return;
+      const scene = result.scene;
+      if (scene.clarify || scene.intent === 'clarify') {
+        setRoute({
+          ...r,
+          kind: 'clarify',
+          question: scene.clarify || '需要补充什么条件？',
+          reply: scene.understanding,
+        });
+        setPresentation('response');
+        return;
+      }
+      const chatOnly =
+        r.kind === 'blocked' ||
+        (r.kind === 'chat' &&
+          !r.reason.startsWith('当前演示规则') &&
+          !isImmediateControl(r, scene));
+      if (
+        scene.intent === 'none' ||
+        chatOnly ||
+        (!scene.actions.length && !scene.say)
+      ) {
+        const reply =
+          scene.understanding || scene.say || r.reply || '这次没有生成方案。';
+        setRoute({ ...r, kind: 'chat', reply });
+        setFeedback(reply);
+        setPresentation('response');
+        return;
+      }
+      if (isImmediateControl(r, scene)) {
+        const available = scene.actions.filter((a) =>
+          capabilities.some(
+            (c) =>
+              c.zh === a.primary &&
+              c.status === 'enabled' &&
+              ['released', 'no_ux'].includes(c.maturity),
+          ),
+        );
+        const actions =
+          r.kind === 'control' && /生理状态/.test(r.reason)
+            ? available.slice(0, 1)
+            : available;
+        live.current = {
+          ...live.current,
+          ...Object.fromEntries(
+            actions
+              .filter((a) => a.primary !== '延时')
+              .map((a) => [a.primary, a.secondary]),
+          ),
+        };
+        setVehicle(live.current);
+        setRoute({
+          ...r,
+          kind: 'control',
+          actions,
+          reply: scene.understanding,
+        });
+        setFeedback(actions.length ? '已调好。' : '这项暂时无法调整。');
+        setPresentation('response');
+        return;
+      }
+      setRoute({
+        ...r,
+        kind: r.kind === 'scene' ? 'scene' : 'suggestion',
+        reply: scene.understanding,
+        reason: 'p13 模型提议，经过现有能力校验',
+      });
+      if (c.ctx.driving) {
+        keepIdea(result, input, 'live');
+        setPresentation('response');
+        setFeedback('完整方案已留在「场景建议」，停车后查看。');
+        return;
+      }
+      if (r.kind !== 'scene') {
+        const denied = evaluateSuggestion(
+          r,
+          result,
+          c.ctx,
+          ledger,
+          contextVehicle,
+        );
+        if (denied) {
+          setFeedback(denied);
+          setPresentation('response');
+          return;
+        }
+        setAttention((prev) => ({ ...prev, questions: prev.questions + 1 }));
+      }
+      setPresentation('proposal');
+      return;
+    }
     if (r.kind === 'control' || r.kind === 'preset') {
       const checked = controlResult(r, c.ctx);
       const available = checked.scene.actions.filter((a) => {
@@ -277,15 +382,10 @@ export function useExperience(c: Controller) {
       setFeedback('完整方案已留在「场景建议」，停车后查看。');
       return;
     }
-    // The response is presented first. This delay is a demo transition, never model latency.
-    timers.current.push(
-      setTimeout(() => {
-        if (id !== job.current) return;
-        setPresentation('offer');
-        setAttention((prev) => ({ ...prev, questions: prev.questions + 1 }));
-      }, 350),
-    );
+    setPresentation('proposal');
+    setAttention((prev) => ({ ...prev, questions: prev.questions + 1 }));
   }
+
   function decline() {
     if (route)
       setAttention((a) => ({
@@ -297,7 +397,7 @@ export function useExperience(c: Controller) {
         },
       }));
     setPresentation('response');
-    setFeedback('好，这次不安排。同类建议进入冷却。');
+    setFeedback('好，不安排了。');
   }
   function applyOnce() {
     if (!c.result) return;
@@ -333,64 +433,37 @@ export function useExperience(c: Controller) {
       snapshot.current!.values[primary] = secondary;
       setVehicle(live.current);
     };
-    const firstDelay = actions.findIndex((a) => a.primary === '延时');
-    const preview = (
-      firstDelay < 0 ? actions : actions.slice(0, firstDelay)
-    ).filter((a) =>
-      /氛围灯|屏幕|音量|声场|音效|声浪|静音|音乐律动/.test(a.primary),
-    );
-    preview.forEach((a) => apply(a.primary, a.secondary));
-    setCountdown(3);
-    setApplication('preview');
+    let delay = 0;
     setPresentation('response');
-    setFeedback(
-      preview.length
-        ? '先试三秒，只调整灯光和声音。'
-        : '先确认三秒，这份提案没有可预览的灯光或声音。',
-    );
-    for (const seconds of [1, 2])
-      timers.current.push(
-        setTimeout(() => {
-          if (id === job.current) setCountdown(3 - seconds);
-        }, seconds * 1000),
-      );
-    timers.current.push(
-      setTimeout(() => {
-        if (id !== job.current) return;
-        setApplication('applying');
-        let delay = 0;
-        for (const a of actions) {
-          if (a.primary === '延时') {
-            delay += parseFloat(a.secondary) * 1000;
-            continue;
-          }
-          if (delay === 0) apply(a.primary, a.secondary);
-          else
-            timers.current.push(
-              setTimeout(() => apply(a.primary, a.secondary), delay),
-            );
-        }
-        const finish = () => {
-          if (id !== job.current) return;
-          setApplication('done');
-          setFeedback(
-            '本次已应用（演示），没有自动保存。' +
-              (checked.conceptual ? '规划 / 提议项未应用。' : ''),
-          );
-          keepIdea(c.result!, c.heard);
-        };
-        if (delay) timers.current.push(setTimeout(finish, delay));
-        else finish();
-      }, 3000),
-    );
+    for (const a of actions) {
+      if (a.primary === '延时') {
+        delay += parseFloat(a.secondary) * 1000;
+        continue;
+      }
+      if (!delay) apply(a.primary, a.secondary);
+      else
+        timers.current.push(
+          setTimeout(() => apply(a.primary, a.secondary), delay),
+        );
+    }
+    const finish = () => {
+      if (id !== job.current) return;
+      setApplication('done');
+      setFeedback('已应用');
+      if (!c.isSaved) keepIdea(c.result!, c.heard);
+    };
+    if (delay) {
+      setApplication('applying');
+      timers.current.push(setTimeout(finish, delay));
+    } else finish();
   }
+
   return {
     route,
     presentation,
     feedback,
     vehicle,
     application,
-    countdown,
     inbox,
     reused,
     viewRequest,

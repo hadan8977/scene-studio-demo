@@ -61,6 +61,9 @@ export function useSceneController(initialExample = true) {
     [error, setError] = useState('');
   const [timing, setTiming] = useState<Timing | null>(null),
     [modelUsed, setModelUsed] = useState('');
+  const [provenance, setProvenance] = useState<Record<string, unknown> | null>(
+    null,
+  );
   const [review, setReview] = useState(false),
     [saved, setSaved] = useState<SavedScene[]>([]),
     [activeId, setActiveId] = useState<string | null>(null),
@@ -178,6 +181,8 @@ export function useSceneController(initialExample = true) {
   }
   function discard() {
     cancel();
+    setProvenance(null);
+    setModelUsed('');
     setResult(null);
     setHeard('');
     setInput('');
@@ -209,6 +214,7 @@ export function useSceneController(initialExample = true) {
     text = input,
     forceNew = false,
     sourceOverride?: Source,
+    vehicle?: Record<string, string>,
   ): Promise<SceneResult | null> {
     const runMode = sourceOverride || mode;
     const query = text.trim();
@@ -227,6 +233,7 @@ export function useSceneController(initialExample = true) {
     started.current = performance.now();
     setTiming(null);
     setIsSaved(false);
+    setProvenance(null);
     setWhy(false);
     let done = false;
     let output: SceneResult | null = null;
@@ -234,18 +241,7 @@ export function useSceneController(initialExample = true) {
     try {
       if (runMode === 'example') {
         const next = replay(query, ctx, previous);
-        // Example timing is solely an interface transition, never a measured model latency.
-        await new Promise<void>((resolve, reject) => {
-          const t = setTimeout(resolve, 650);
-          controller.signal.addEventListener(
-            'abort',
-            () => {
-              clearTimeout(t);
-              reject(new DOMException('Cancelled', 'AbortError'));
-            },
-            { once: true },
-          );
-        });
+        // Replay is immediate. Only live provider calls report latency.
         if (id !== requestId.current) return null;
         output = next;
         setSource('example');
@@ -263,7 +259,7 @@ export function useSceneController(initialExample = true) {
           body: JSON.stringify({
             input: query,
             model,
-            context: ctx,
+            context: { ...ctx, vehicle },
             currentScene: previous,
           }),
           signal: controller.signal,
@@ -290,6 +286,7 @@ export function useSceneController(initialExample = true) {
             output = event.result;
             setTiming(event.timing);
             setModelUsed(event.model);
+            setProvenance(event.provenance || null);
             setSource('live');
             done = true;
           }
@@ -370,6 +367,7 @@ export function useSceneController(initialExample = true) {
   }
   function openSaved(item: SavedScene) {
     cancel();
+    setProvenance(null);
     const checked = validateScene(item.result.scene, ctx, item.input);
     const changedByContext =
       JSON.stringify(checked.scene) !== JSON.stringify(item.result.scene);
@@ -652,6 +650,7 @@ export function useSceneController(initialExample = true) {
     setError,
     timing,
     modelUsed,
+    provenance,
     review,
     setReview,
     saved,

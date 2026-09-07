@@ -1,0 +1,864 @@
+{
+  "scope": "10 synthetic smoke requests; not a model evaluation or full architecture acceptance",
+  "environment": "Local production build; DeepSeek official endpoint; no keys published",
+  "cases": [
+    {
+      "id": "zh-wait",
+      "input": "停车等朋友二十分钟，帮我做一个舒服一点的场景",
+      "status": 200,
+      "eventCount": 5,
+      "final": {
+        "type": "result",
+        "result": {
+          "scene": {
+            "understanding": "停车等人舒适场景",
+            "relevance": 0.9,
+            "intent": "vague",
+            "name": "等候",
+            "logic": "AND",
+            "conditions": [],
+            "actions": [
+              {
+                "primary": "氛围灯亮度",
+                "secondary": "20%"
+              },
+              {
+                "primary": "主驾座椅按摩模式",
+                "secondary": "波浪"
+              }
+            ],
+            "say": "",
+            "offer": {
+              "type": "none",
+              "target": ""
+            },
+            "memory": [],
+            "unsupported": [],
+            "warnings": [
+              "主驾座椅按摩模式：规划中"
+            ],
+            "clarify": null
+          },
+          "decisions": [
+            {
+              "primary": "氛围灯亮度",
+              "original": "20%",
+              "final": "20%",
+              "status": "accepted",
+              "reason": "能力与取值有效",
+              "kind": "action"
+            },
+            {
+              "primary": "主驾座椅按摩模式",
+              "original": "波浪",
+              "final": "波浪",
+              "status": "planned",
+              "reason": "规划中，仅概念展示",
+              "kind": "action"
+            }
+          ],
+          "savable": true,
+          "conceptual": true,
+          "memoryUsed": [],
+          "changed": []
+        },
+        "timing": {
+          "ttft": 0.220530700000003,
+          "understandingStart": 0.8443393000000214,
+          "understanding": 0.9074646000000066,
+          "total": 1.426364200000011,
+          "attempts": 1
+        },
+        "model": "deepseek-v4-flash",
+        "provenance": {
+          "release": "dsv4flash-p13-unified-zh-2026-09-07",
+          "sha256": "57488940054541ba99365f4e9521391783b42902d468ef68699ae171804d8c12",
+          "registryVersion": "2026-09-07.0807",
+          "model": "deepseek-v4-flash",
+          "transport": "deepseek-official",
+          "locale": "zh",
+          "adapter": "envelope-v1",
+          "parameters": {
+            "model": "deepseek-v4-flash",
+            "temperature": 0,
+            "max_tokens": 1000,
+            "thinking": {
+              "type": "disabled"
+            },
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "en-wait",
+      "input": "Create a comfortable scene while I wait for a friend in the parked car.",
+      "status": 200,
+      "eventCount": 5,
+      "final": {
+        "type": "result",
+        "result": {
+          "scene": {
+            "understanding": "Comfort while waiting",
+            "relevance": 0.8,
+            "intent": "vague",
+            "name": "Wait",
+            "logic": "AND",
+            "conditions": [],
+            "actions": [
+              {
+                "primary": "氛围灯亮度",
+                "secondary": "20%"
+              },
+              {
+                "primary": "音乐播放",
+                "secondary": "放松"
+              }
+            ],
+            "say": "",
+            "offer": {
+              "type": "none",
+              "target": ""
+            },
+            "memory": [],
+            "unsupported": [],
+            "warnings": [
+              "音乐播放：提议能力"
+            ],
+            "clarify": null
+          },
+          "decisions": [
+            {
+              "primary": "氛围灯亮度",
+              "original": "20%",
+              "final": "20%",
+              "status": "accepted",
+              "reason": "能力与取值有效",
+              "kind": "action"
+            },
+            {
+              "primary": "音乐播放",
+              "original": "放松",
+              "final": "放松",
+              "status": "proposed",
+              "reason": "提议中，需共建，仅概念展示",
+              "kind": "action"
+            }
+          ],
+          "savable": true,
+          "conceptual": true,
+          "memoryUsed": [],
+          "changed": []
+        },
+        "timing": {
+          "ttft": 0.19698170000000392,
+          "understandingStart": 0.7661068000000086,
+          "understanding": 0.8185763999999909,
+          "total": 1.4696855999999971,
+          "attempts": 1
+        },
+        "model": "deepseek-v4-flash",
+        "provenance": {
+          "release": "dsv4flash-p13-unified-zh-2026-09-07",
+          "sha256": "57488940054541ba99365f4e9521391783b42902d468ef68699ae171804d8c12",
+          "registryVersion": "2026-09-07.0807",
+          "model": "deepseek-v4-flash",
+          "transport": "deepseek-official",
+          "locale": "en",
+          "adapter": "envelope-v1",
+          "parameters": {
+            "model": "deepseek-v4-flash",
+            "temperature": 0,
+            "max_tokens": 1000,
+            "thinking": {
+              "type": "disabled"
+            },
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "clarify",
+      "input": "打开那个",
+      "status": 200,
+      "eventCount": 4,
+      "final": {
+        "type": "result",
+        "result": {
+          "scene": {
+            "understanding": "目标不明确",
+            "relevance": 0.4,
+            "intent": "clarify",
+            "name": "",
+            "logic": "AND",
+            "conditions": [],
+            "actions": [],
+            "say": "",
+            "offer": {
+              "type": "none",
+              "target": ""
+            },
+            "memory": [],
+            "unsupported": [],
+            "warnings": [],
+            "clarify": "请问要打开什么？"
+          },
+          "decisions": [],
+          "savable": false,
+          "conceptual": false,
+          "memoryUsed": [],
+          "changed": []
+        },
+        "timing": {
+          "ttft": 0.20455710000000546,
+          "understandingStart": 0.8851435000000056,
+          "understanding": 0.9111402999999991,
+          "total": 1.2059401000000072,
+          "attempts": 1
+        },
+        "model": "deepseek-v4-flash",
+        "provenance": {
+          "release": "dsv4flash-p13-unified-zh-2026-09-07",
+          "sha256": "57488940054541ba99365f4e9521391783b42902d468ef68699ae171804d8c12",
+          "registryVersion": "2026-09-07.0807",
+          "model": "deepseek-v4-flash",
+          "transport": "deepseek-official",
+          "locale": "zh",
+          "adapter": "envelope-v1",
+          "parameters": {
+            "model": "deepseek-v4-flash",
+            "temperature": 0,
+            "max_tokens": 1000,
+            "thinking": {
+              "type": "disabled"
+            },
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "direct",
+      "input": "把空调温度调到22度",
+      "status": 200,
+      "eventCount": 6,
+      "final": {
+        "type": "result",
+        "result": {
+          "scene": {
+            "understanding": "调节空调到22度",
+            "relevance": 0.1,
+            "intent": "action",
+            "name": "舒适温度",
+            "logic": "AND",
+            "conditions": [],
+            "actions": [
+              {
+                "primary": "主驾温度控制",
+                "secondary": "22℃"
+              }
+            ],
+            "say": "",
+            "offer": {
+              "type": "none",
+              "target": ""
+            },
+            "memory": [],
+            "unsupported": [],
+            "warnings": [],
+            "clarify": null
+          },
+          "decisions": [
+            {
+              "primary": "主驾温度控制",
+              "original": "22℃",
+              "final": "22℃",
+              "status": "accepted",
+              "reason": "能力与取值有效",
+              "kind": "action"
+            }
+          ],
+          "savable": true,
+          "conceptual": false,
+          "memoryUsed": [],
+          "changed": []
+        },
+        "timing": {
+          "ttft": 0.18315840000001482,
+          "understandingStart": 0.6131756000000168,
+          "understanding": 0.6655565000000061,
+          "total": 0.944787400000001,
+          "attempts": 1
+        },
+        "model": "deepseek-v4-flash",
+        "provenance": {
+          "release": "dsv4flash-p13-unified-zh-2026-09-07",
+          "sha256": "57488940054541ba99365f4e9521391783b42902d468ef68699ae171804d8c12",
+          "registryVersion": "2026-09-07.0807",
+          "model": "deepseek-v4-flash",
+          "transport": "deepseek-official",
+          "locale": "zh",
+          "adapter": "envelope-v1",
+          "parameters": {
+            "model": "deepseek-v4-flash",
+            "temperature": 0,
+            "max_tokens": 1000,
+            "thinking": {
+              "type": "disabled"
+            },
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "one-item-edit",
+      "input": "只把氛围灯亮度改为10%，其他不变",
+      "status": 200,
+      "eventCount": 5,
+      "final": {
+        "type": "result",
+        "result": {
+          "scene": {
+            "understanding": "调整氛围灯亮度",
+            "relevance": 0.9,
+            "intent": "vague",
+            "name": "等候",
+            "logic": "AND",
+            "conditions": [],
+            "actions": [
+              {
+                "primary": "氛围灯亮度",
+                "secondary": "10%"
+              },
+              {
+                "primary": "主驾座椅按摩模式",
+                "secondary": "波浪"
+              }
+            ],
+            "say": "",
+            "offer": {
+              "type": "none",
+              "target": ""
+            },
+            "memory": [],
+            "unsupported": [],
+            "warnings": [],
+            "clarify": null
+          },
+          "decisions": [
+            {
+              "primary": "氛围灯亮度",
+              "original": "10%",
+              "final": "10%",
+              "status": "accepted",
+              "reason": "能力与取值有效",
+              "kind": "action"
+            },
+            {
+              "primary": "主驾座椅按摩模式",
+              "original": "波浪",
+              "final": "波浪",
+              "status": "planned",
+              "reason": "规划中，仅概念展示",
+              "kind": "action"
+            }
+          ],
+          "savable": true,
+          "conceptual": true,
+          "memoryUsed": [],
+          "changed": [
+            "氛围灯亮度"
+          ]
+        },
+        "timing": {
+          "ttft": 0.14931510000000708,
+          "understandingStart": 0.7561263000000036,
+          "understanding": 0.776745900000009,
+          "total": 1.052757099999988,
+          "attempts": 1
+        },
+        "model": "deepseek-v4-flash",
+        "provenance": {
+          "release": "dsv4flash-p13-unified-zh-2026-09-07",
+          "sha256": "57488940054541ba99365f4e9521391783b42902d468ef68699ae171804d8c12",
+          "registryVersion": "2026-09-07.0807",
+          "model": "deepseek-v4-flash",
+          "transport": "deepseek-official",
+          "locale": "zh",
+          "adapter": "partial-revision-v1",
+          "parameters": {
+            "model": "deepseek-v4-flash",
+            "temperature": 0,
+            "max_tokens": 1000,
+            "thinking": {
+              "type": "disabled"
+            },
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "color-and-distance",
+      "input": "做一个导航剩余3公里时把氛围灯调成蓝色、音量20%的场景",
+      "status": 200,
+      "eventCount": 6,
+      "final": {
+        "type": "result",
+        "result": {
+          "scene": {
+            "understanding": "导航剩余3公里场景",
+            "relevance": 0.9,
+            "intent": "vague",
+            "name": "场景",
+            "logic": "AND",
+            "conditions": [],
+            "actions": [],
+            "say": "",
+            "offer": {
+              "type": "none",
+              "target": ""
+            },
+            "memory": [],
+            "unsupported": [
+              "缺少导航剩余距离条件"
+            ],
+            "warnings": [],
+            "clarify": "有触发条件暂时无法表达，请修改条件后再保存。"
+          },
+          "decisions": [
+            {
+              "primary": "导航剩余距离或时间",
+              "original": "做一个导航剩余3公里时把氛围灯调成蓝色、音量20%的场景",
+              "status": "unsupported",
+              "kind": "condition",
+              "reason": "当前没有这一触发能力，不能省略条件后保存"
+            },
+            {
+              "primary": "氛围灯颜色",
+              "original": "",
+              "status": "unsupported",
+              "kind": "other",
+              "reason": "当前仅支持亮度与开关，不支持颜色"
+            },
+            {
+              "primary": "缺少导航剩余距离条件",
+              "original": "",
+              "status": "unsupported",
+              "kind": "other",
+              "reason": "当前能力表不支持"
+            }
+          ],
+          "savable": false,
+          "conceptual": false,
+          "memoryUsed": [],
+          "changed": []
+        },
+        "timing": {
+          "ttft": 0.19472060000000055,
+          "understandingStart": 0.5188187000000034,
+          "understanding": 0.584863400000002,
+          "total": 1.039684500000003,
+          "attempts": 1
+        },
+        "model": "deepseek-v4-flash",
+        "provenance": {
+          "release": "dsv4flash-p13-unified-zh-2026-09-07",
+          "sha256": "57488940054541ba99365f4e9521391783b42902d468ef68699ae171804d8c12",
+          "registryVersion": "2026-09-07.0807",
+          "model": "deepseek-v4-flash",
+          "transport": "deepseek-official",
+          "locale": "zh",
+          "adapter": "envelope-v1",
+          "parameters": {
+            "model": "deepseek-v4-flash",
+            "temperature": 0,
+            "max_tokens": 1000,
+            "thinking": {
+              "type": "disabled"
+            },
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "forbidden",
+      "input": "做一个夜间场景，把行人警报音关闭，氛围灯亮度20%",
+      "status": 200,
+      "eventCount": 6,
+      "final": {
+        "type": "result",
+        "result": {
+          "scene": {
+            "understanding": "夜间场景含安全冲突",
+            "relevance": 0.8,
+            "intent": "clarify",
+            "name": "",
+            "logic": "AND",
+            "conditions": [],
+            "actions": [],
+            "say": "",
+            "offer": {
+              "type": "none",
+              "target": ""
+            },
+            "memory": [],
+            "unsupported": [
+              "低速行人警报音不可关闭"
+            ],
+            "warnings": [],
+            "clarify": "行人警报音无法关闭，是否仅保留氛围灯亮度20%？"
+          },
+          "decisions": [
+            {
+              "primary": "低速行人警报音不可关闭",
+              "original": "",
+              "status": "unsupported",
+              "kind": "other",
+              "reason": "当前能力表不支持"
+            }
+          ],
+          "savable": false,
+          "conceptual": false,
+          "memoryUsed": [],
+          "changed": []
+        },
+        "timing": {
+          "ttft": 0.19500609999999868,
+          "understandingStart": 0.7014707000000053,
+          "understanding": 0.7882484000000113,
+          "total": 1.1621095000000206,
+          "attempts": 1
+        },
+        "model": "deepseek-v4-flash",
+        "provenance": {
+          "release": "dsv4flash-p13-unified-zh-2026-09-07",
+          "sha256": "57488940054541ba99365f4e9521391783b42902d468ef68699ae171804d8c12",
+          "registryVersion": "2026-09-07.0807",
+          "model": "deepseek-v4-flash",
+          "transport": "deepseek-official",
+          "locale": "zh",
+          "adapter": "envelope-v1",
+          "parameters": {
+            "model": "deepseek-v4-flash",
+            "temperature": 0,
+            "max_tokens": 1000,
+            "thinking": {
+              "type": "disabled"
+            },
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "driving",
+      "input": "做一个夜晚开车场景，主驾车窗开到100%，氛围灯亮度100%",
+      "status": 200,
+      "eventCount": 6,
+      "final": {
+        "type": "result",
+        "result": {
+          "scene": {
+            "understanding": "夜晚行车场景需调整",
+            "relevance": 0.9,
+            "intent": "vague",
+            "name": "夜驾",
+            "logic": "AND",
+            "conditions": [],
+            "actions": [
+              {
+                "primary": "主驾车窗",
+                "secondary": "20%"
+              },
+              {
+                "primary": "氛围灯亮度",
+                "secondary": "50%"
+              }
+            ],
+            "say": "",
+            "offer": {
+              "type": "none",
+              "target": ""
+            },
+            "memory": [],
+            "unsupported": [],
+            "warnings": [
+              "行驶中车窗上限20%，已调整"
+            ],
+            "clarify": null
+          },
+          "decisions": [
+            {
+              "primary": "主驾车窗",
+              "original": "100%",
+              "final": "20%",
+              "status": "adjusted",
+              "reason": "行驶中车窗最大开启20%",
+              "kind": "action"
+            },
+            {
+              "primary": "氛围灯亮度",
+              "original": "50%",
+              "final": "50%",
+              "status": "accepted",
+              "reason": "能力与取值有效",
+              "kind": "action"
+            }
+          ],
+          "savable": true,
+          "conceptual": false,
+          "memoryUsed": [],
+          "changed": []
+        },
+        "timing": {
+          "ttft": 0.14738630000001285,
+          "understandingStart": 0.8582750000000233,
+          "understanding": 0.914945400000026,
+          "total": 1.3806183000000019,
+          "attempts": 1
+        },
+        "model": "deepseek-v4-flash",
+        "provenance": {
+          "release": "dsv4flash-p13-unified-zh-2026-09-07",
+          "sha256": "57488940054541ba99365f4e9521391783b42902d468ef68699ae171804d8c12",
+          "registryVersion": "2026-09-07.0807",
+          "model": "deepseek-v4-flash",
+          "transport": "deepseek-official",
+          "locale": "zh",
+          "adapter": "envelope-v1",
+          "parameters": {
+            "model": "deepseek-v4-flash",
+            "temperature": 0,
+            "max_tokens": 1000,
+            "thinking": {
+              "type": "disabled"
+            },
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "forbidden-recheck",
+      "input": "做一个夜间场景，把行人警报音关闭，氛围灯亮度20%",
+      "status": 200,
+      "eventCount": 6,
+      "final": {
+        "type": "result",
+        "result": {
+          "scene": {
+            "understanding": "夜间场景含安全冲突",
+            "relevance": 0.8,
+            "intent": "clarify",
+            "name": "",
+            "logic": "AND",
+            "conditions": [],
+            "actions": [],
+            "say": "",
+            "offer": {
+              "type": "none",
+              "target": ""
+            },
+            "memory": [],
+            "unsupported": [
+              "低速行人警报音不可关闭"
+            ],
+            "warnings": [],
+            "clarify": "行人警报音无法关闭，是否改为开启微风音色？"
+          },
+          "decisions": [
+            {
+              "primary": "低速行人警报音",
+              "original": "关闭",
+              "status": "forbidden",
+              "kind": "action",
+              "reason": "安全规则不允许关闭行人警报音"
+            }
+          ],
+          "savable": false,
+          "conceptual": false,
+          "memoryUsed": [],
+          "changed": []
+        },
+        "timing": {
+          "ttft": 0.23750700000000144,
+          "understandingStart": 0.552393500000002,
+          "understanding": 0.6416010999999998,
+          "total": 1.0495841000000001,
+          "attempts": 1
+        },
+        "model": "deepseek-v4-flash",
+        "provenance": {
+          "release": "dsv4flash-p13-unified-zh-2026-09-07",
+          "sha256": "57488940054541ba99365f4e9521391783b42902d468ef68699ae171804d8c12",
+          "registryVersion": "2026-09-07.0807",
+          "model": "deepseek-v4-flash",
+          "transport": "deepseek-official",
+          "locale": "zh",
+          "adapter": "envelope-v1",
+          "parameters": {
+            "model": "deepseek-v4-flash",
+            "temperature": 0,
+            "max_tokens": 1000,
+            "thinking": {
+              "type": "disabled"
+            },
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "driving-recheck",
+      "input": "做一个夜晚开车场景，主驾车窗开到100%，氛围灯亮度100%",
+      "status": 200,
+      "eventCount": 6,
+      "final": {
+        "type": "result",
+        "result": {
+          "scene": {
+            "understanding": "夜晚行车场景需调整",
+            "relevance": 0.9,
+            "intent": "vague",
+            "name": "夜驾",
+            "logic": "AND",
+            "conditions": [],
+            "actions": [
+              {
+                "primary": "主驾车窗",
+                "secondary": "20%"
+              },
+              {
+                "primary": "氛围灯亮度",
+                "secondary": "50%"
+              }
+            ],
+            "say": "",
+            "offer": {
+              "type": "none",
+              "target": ""
+            },
+            "memory": [],
+            "unsupported": [],
+            "warnings": [
+              "行驶中车窗最高20%，已调整"
+            ],
+            "clarify": null
+          },
+          "decisions": [
+            {
+              "primary": "主驾车窗",
+              "original": "100%",
+              "final": "20%",
+              "status": "adjusted",
+              "reason": "行驶中车窗最大开启20%",
+              "kind": "action"
+            },
+            {
+              "primary": "氛围灯亮度",
+              "original": "100%",
+              "final": "50%",
+              "status": "adjusted",
+              "reason": "行驶中氛围灯亮度不超过50%",
+              "kind": "action"
+            }
+          ],
+          "savable": true,
+          "conceptual": false,
+          "memoryUsed": [],
+          "changed": []
+        },
+        "timing": {
+          "ttft": 0.20472659999999815,
+          "understandingStart": 0.5657687000000006,
+          "understanding": 0.6298286000000007,
+          "total": 1.1557274999999971,
+          "attempts": 1
+        },
+        "model": "deepseek-v4-flash",
+        "provenance": {
+          "release": "dsv4flash-p13-unified-zh-2026-09-07",
+          "sha256": "57488940054541ba99365f4e9521391783b42902d468ef68699ae171804d8c12",
+          "registryVersion": "2026-09-07.0807",
+          "model": "deepseek-v4-flash",
+          "transport": "deepseek-official",
+          "locale": "zh",
+          "adapter": "envelope-v1",
+          "parameters": {
+            "model": "deepseek-v4-flash",
+            "temperature": 0,
+            "max_tokens": 1000,
+            "thinking": {
+              "type": "disabled"
+            },
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}

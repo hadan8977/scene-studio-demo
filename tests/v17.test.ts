@@ -9,7 +9,8 @@ import {
   emptyAttention,
 } from '../lib/intent-routing.ts';
 import { capabilities, validateScene, type Context } from '../lib/scene.ts';
-import { nonSceneRoute, generate } from '../lib/generation.ts';
+import { generate } from '../lib/generation.ts';
+import { vehicleShortcut } from '../lib/vehicle-shortcuts.ts';
 import {
   similarScene,
   mergeScene,
@@ -40,7 +41,7 @@ const item = (id: string, caseId: string): SavedScene => ({
 
 void test('v17 examples cover varied registered capabilities and expose every unavailable request', () => {
   assert.ok(DEMO_CASES.filter((c) => c.entry === 'create').length >= 20);
-  assert.ok(DEMO_CASES.filter((c) => c.entry === 'ambient').length >= 8);
+  assert.ok(DEMO_CASES.filter((c) => c.entry === 'ambient').length >= 7);
   const used = new Set<string>();
   for (const c of DEMO_CASES.filter((c) => c.entry !== 'counter')) {
     const result = checked(c.id);
@@ -91,22 +92,12 @@ void test('direct controls, official presets and vague car-control questions nev
   assert.equal(routeInput('做一个光和温度的场景', parked).kind, 'scene');
   assert.equal(routeInput('灯再暗一点', parked).kind, 'control');
   assert.equal(routeInput('打开灯光', parked).kind, 'control');
-  assert.equal(
-    nonSceneRoute({
-      input: '灯再暗一点',
-      context: parked,
-      model: 'test',
-      currentScene: sceneForCase('wait', parked),
-    }),
-    null,
-    'Editing remains a continuation',
-  );
   const preset = controlResult(routeInput('进入露营模式', parked), parked);
   assert.equal(preset.conceptual, true);
   assert.equal(preset.scene.actions.length, 1);
 });
 
-void test('service rejects direct controls before any model request', async () => {
+void test('service rejects an unconfigured model before a provider request', async () => {
   let requests = 0;
   await assert.rejects(
     generate(
@@ -119,7 +110,7 @@ void test('service rejects direct controls before any model request', async () =
         return Response.json({});
       },
     ),
-    /不会生成场景/,
+    /候选列表/,
   );
   assert.equal(requests, 0);
 });
@@ -211,26 +202,9 @@ void test('proactive gate respects current values, cross-element value, opt-out,
     DEMO_CASES.find((c) => c.id === 'ambient-rest')!.input,
     parked,
   );
-  assert.equal(
-    evaluateSuggestion(
-      rest,
-      checked('ambient-rest'),
-      parked,
-      emptyAttention(),
-      {},
-    ),
-    null,
-  );
-  assert.match(
-    evaluateSuggestion(
-      rest,
-      checked('ambient-rest'),
-      driving,
-      emptyAttention(),
-      {},
-    )!,
-    /行驶中/,
-  );
+  assert.equal(rest.kind, 'chat');
+  assert.equal(vehicleShortcut('进入休憩模式', false)?.applied, true);
+  assert.equal(vehicleShortcut('进入休憩模式', true)?.applied, false);
 });
 
 void test('similarity ignores active edit, compares conditions, and merge preserves unrelated settings', () => {

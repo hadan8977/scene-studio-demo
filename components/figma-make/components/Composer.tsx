@@ -28,10 +28,12 @@ export function Composer({
   gen,
   onSwitchToReal,
   onDiscard = gen.reset,
+  surface = 'app',
 }: {
   gen: Generation;
   onSwitchToReal?: () => void;
   onDiscard?: () => void;
+  surface?: 'app' | 'popup';
 }) {
   const { scene } = gen,
     x = gen.experience;
@@ -133,6 +135,7 @@ export function Composer({
         editor={<SceneFields gen={gen} />}
         onApply={x.applyOnce}
         confirmApplication={
+          surface === 'popup' ||
           gen.saved ||
           (x.route?.kind === 'suggestion' && gen.changedIds.size === 0)
         }
