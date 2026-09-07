@@ -8,7 +8,8 @@ Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright
 - Source: Overpass API (`https://overpass.kumi.systems/api/interpreter`).
 - OSM base timestamp: 2026-06-01T08:52:28Z (reported by the source; this is a snapshot, not a current navigation service).
 - Features rendered: highway ways, buildings, water ways, park ways and a museum landmark. Complex relation-only polygons are not reconstructed in this static extract.
-- Highlight: actual OSM ways named 龙腾大道. Landmark: node 3126004579, 龙美术馆（西岸馆）.
+- Highlight: the longest visible continuous chain of actual OSM ways named 龙腾大道. Landmark: node 3126004579, 龙美术馆（西岸馆）.
+- Vehicle: an explicitly simulated point at 20% along that chain, oriented using its tangent. The vehicle, line and landmark share one 1920×1000 SVG viewBox and are transformed together inside the screen. `source.json` records route points and the vehicle pose. The gray museum marker is separate from the lime vehicle arrow.
 - Projection: Web Mercator; no GPS lookup, commercial tiles, map API key or runtime network requests to a map provider.
 
 Rebuild using `node scripts/build-map.mjs path/to/overpass.json` from the repository root. The source export query is:

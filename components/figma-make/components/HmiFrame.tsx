@@ -11,14 +11,15 @@ export function HmiFrame({
   chrome?: ReactNode;
 }) {
   const [scale, setScale] = useState(0.6);
+  const [front, setFront] = useState(false);
 
   useEffect(() => {
     const calc = () => {
       const s = Math.max(
         0.08,
         Math.min(
-          (window.innerWidth - 72) / 1920,
-          (window.innerHeight - 120) / 1080,
+          (window.innerWidth - 44) / 1920,
+          (window.innerHeight - 64) / 1080,
         ),
       );
       setScale(s);
@@ -44,7 +45,8 @@ export function HmiFrame({
         style={{
           width: 1920,
           height: 1080,
-          transform: `scale(${scale}) rotateX(2.5deg) rotateY(-5deg)`,
+          transform: `scale(${scale}) rotateX(${front ? 0 : 2.5}deg) rotateY(${front ? 0 : -5}deg)`,
+          transition: 'transform 450ms ease',
           boxShadow:
             '0 2px 0 1px rgba(255,255,255,0.05), 26px 30px 0 -2px #060708, 34px 44px 60px -10px rgba(0,0,0,0.85), 0 60px 140px -30px rgba(0,0,0,0.9)',
         }}
@@ -56,10 +58,17 @@ export function HmiFrame({
         <div className="pointer-events-none absolute inset-[3px] rounded-[42px] ring-1 ring-black/60" />
         {/* 屏幕玻璃 */}
         <div className="relative h-full w-full overflow-hidden rounded-[32px] bg-background text-foreground">
-          <div className="h-full pb-[64px]">{children}</div>
+          <div className="h-full pb-[80px]">{children}</div>
           {chrome && (
-            <div className="absolute inset-x-0 bottom-0 z-30 flex h-[64px] items-center justify-center border-t border-white/[0.04] bg-[#0b0c0e]/95">
+            <div className="absolute inset-x-0 bottom-0 z-30 flex h-[80px] items-center justify-center border-t border-white/[0.04] bg-[#0b0c0e]/95">
               {chrome}
+              <button
+                onClick={() => setFront((v) => !v)}
+                aria-pressed={front}
+                className="absolute right-7 min-h-12 rounded-full border border-border px-5 text-[18px] text-muted-foreground hover:text-foreground"
+              >
+                {front ? '驾驶员视角' : '正视阅读'}
+              </button>
             </div>
           )}
           {/* 玻璃反光 */}

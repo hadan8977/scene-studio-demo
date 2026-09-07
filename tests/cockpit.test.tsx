@@ -120,7 +120,9 @@ const visible = (selector: string) =>
 const card = () => visible('[aria-label="场景生成卡片"]')[0];
 async function generate(text = '等人时，帮我布置得舒服一点') {
   await type('描述你想要的场景', text);
-  await click('生成场景');
+  await click(
+    visible('[aria-label="发送给小塔"]').length ? '发送给小塔' : '生成场景',
+  );
   await settle();
 }
 
@@ -139,14 +141,14 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       assert.match(card().textContent!, /等你的片刻/);
       assert.ok(
         visible('[data-testid="service-popup"]')[0].classList.contains(
-          'w-[520px]',
+          'w-[700px]',
         ),
       );
       assert.equal(stored().length, 0);
       await click('收起场景卡片');
       await settle();
       assert.equal(visible('[data-testid="service-popup"]').length, 0);
-      await click('继续查看场景提案');
+      await click('继续查看小塔的回应');
       await settle();
       assert.equal(visible('[aria-label="场景生成卡片"]').length, 1);
     },
@@ -245,12 +247,18 @@ test('Figma Make foundation with the production scene controller', async (t) => 
     async () => {
       await mount();
       await generate('帮我把那个打开');
-      assert.ok(visible('input[aria-label="补充场景信息"]').length);
-      await type('补充场景信息', '灯光');
-      await click('继续');
+      assert.match(
+        visible('[data-testid="experience-panel"]')[0].textContent!,
+        /你想打开空调/,
+      );
+      await click('灯光');
       await settle();
-      assert.match(card().textContent!, /氛围灯开关/);
-      await click('不用');
+      assert.match(
+        visible('[data-testid="experience-panel"]')[0].textContent!,
+        /氛围灯开关/,
+      );
+      assert.equal(card(), undefined);
+      await click('再聊一句');
       await settle();
       await generate('Create a quiet scene for waiting in the car');
       assert.match(card().textContent!, /Quiet moment/);
@@ -261,13 +269,13 @@ test('Figma Make foundation with the production scene controller', async (t) => 
     'forbidden actions stay separate and driving has exactly three summary lines',
     async () => {
       await mount();
-      await generate('把氛围灯改成蓝色，关闭行人警报音，车窗开到50%');
+      await generate('做个透气场景，车窗开到50%，关闭行人警报音');
       assert.match(card().textContent!, /禁止/);
-      assert.match(card().textContent!, /不支持/);
+      assert.doesNotMatch(card().textContent!, /氛围灯改成蓝色/);
       await click('切换到行驶态');
       assert.equal(visible('[data-testid="driving-summary"] p').length, 3);
       assert.equal(visible('[aria-label="场景生成卡片"]').length, 0);
-      assert.equal(button('生成场景').disabled, true);
+      assert.equal(button('发送给小塔').disabled, true);
       await click('切换到停车态');
       assert.match(card().textContent!, /20%/);
       await click('就这样保存');
@@ -340,6 +348,8 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await click('用当前档案生成');
       await settle();
       await click('就这样保存');
+      if (visible('[data-testid="duplicate-panel"]').length)
+        await click('更新原场景');
       await settle();
       assert.equal(
         stored()[0].result.scene.actions.find(
@@ -371,7 +381,11 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await click('关闭评审设置');
       await settle();
       await generate('把灯调暗、温度24度');
-      assert.match(card().textContent!, /光和温度/);
+      assert.equal(card(), undefined);
+      assert.match(
+        visible('[data-testid="experience-panel"]')[0].textContent!,
+        /车控已接手/,
+      );
     },
   );
 
@@ -380,15 +394,15 @@ test('Figma Make foundation with the production scene controller', async (t) => 
     async () => {
       await mount();
       await type('描述你想要的场景', '做一个雨夜回家的场景');
-      await click('生成场景');
+      await click('发送给小塔');
       await type('描述你想要的场景', '做个安静场景，别吵醒后排');
-      await click('生成场景');
+      await click('发送给小塔');
       await settle();
-      assert.match(card().textContent!, /轻一点/);
+      assert.match(card().textContent!, /后排轻声/);
       assert.doesNotMatch(card().textContent!, /雨夜归途/);
       await click('就这样保存');
       await settle();
-      assert.equal(stored()[0].result.scene.name, '轻一点');
+      assert.equal(stored()[0].result.scene.name, '后排轻声');
     },
   );
 
@@ -404,12 +418,15 @@ test('Figma Make foundation with the production scene controller', async (t) => 
         visible('a[href="https://www.openstreetmap.org/copyright"]').length,
       );
       await click('场景应用');
-      await click('试用示例 等人时，舒服一点');
+      await click('试用示例 等你的片刻');
       await settle();
-      assert.ok(visible('[aria-label="光的动作"]').length);
-      assert.ok(!visible('[aria-label="气的动作"]').length);
+      assert.ok(visible('[aria-label="灯光与屏幕的动作"]').length);
+      assert.ok(!visible('[aria-label="空气与香氛的动作"]').length);
       await click('主动服务弹窗');
-      await generate('灯再暗一点');
+      await click('改一下');
+      await type('修改当前场景', '灯再暗一点');
+      await click('提交修改');
+      await settle();
       assert.match(card().textContent!, /刚改了 氛围灯亮度/);
       await click('改一下');
       await click('小声一点');
@@ -448,7 +465,7 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       );
       await click('切换档案 无档案');
       await click('主动服务弹窗');
-      await generate('把氛围灯改成蓝色，关闭行人警报音，车窗开到50%');
+      await generate('做个透气场景，车窗开到50%，关闭行人警报音');
       await click('就这样保存');
       await settle();
       await click('主动服务弹窗');
@@ -456,13 +473,300 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await click('场景应用');
       await settle();
       await click('收起编辑窗口');
-      await click('打开场景 透透气');
+      await click('打开场景 安全限制也会保留');
       await settle();
       assert.match(
         visible('[data-testid="driving-summary"]')[0].textContent!,
         /20%/,
       );
       assert.equal(stored()[0].result.scene.actions[0].secondary, '50%');
+    },
+  );
+
+  await t.test(
+    'v17 weak context responds first, asks lightly, applies once and only saves by choice',
+    async () => {
+      await mount();
+      await click('切换档案 周');
+      await click('体验 还要等一会儿');
+      assert.match(
+        visible('[data-testid="experience-panel"]')[0].textContent!,
+        /先歇一会儿/,
+      );
+      assert.equal(card(), undefined);
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 1200));
+      });
+      assert.ok(button('好，试一下'));
+      assert.equal(card(), undefined);
+      await click('好，试一下');
+      assert.match(
+        visible('[data-testid="vehicle-state"]')[0].textContent!,
+        /40%/,
+      );
+      assert.match(
+        visible('[data-testid="vehicle-state"]')[0].textContent!,
+        /24℃/,
+        'temperature is not in the three-second light/sound preview',
+      );
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 3200));
+      });
+      assert.match(
+        visible('[data-testid="vehicle-state"]')[0].textContent!,
+        /22℃/,
+      );
+      assert.equal(stored().length, 0);
+      assert.equal(
+        JSON.parse(localStorage.getItem('scene-studio.ideas.v1') || '[]')
+          .length,
+        1,
+      );
+      await click('查看并保存');
+      assert.ok(card());
+      await click('就这样保存');
+      await settle();
+      assert.equal(stored().length, 1);
+      assert.equal(
+        JSON.parse(localStorage.getItem('scene-studio.ideas.v1') || '[]')
+          .length,
+        0,
+      );
+    },
+  );
+  await t.test(
+    'a new direct control cancels preview timers and cannot be overwritten by the old scene',
+    async () => {
+      await mount();
+      await click('切换档案 周');
+      await click('体验 还要等一会儿');
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 1200));
+      });
+      await click('好，试一下');
+      await type('描述你想要的场景', '温度26度');
+      await click('发送给小塔');
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 3300));
+      });
+      assert.match(
+        visible('[data-testid="vehicle-state"]')[0].textContent!,
+        /26℃/,
+      );
+      assert.doesNotMatch(
+        visible('[data-testid="experience-panel"]')[0].textContent!,
+        /本次已应用/,
+      );
+      assert.equal(card(), undefined);
+      assert.equal(stored().length, 0);
+      assert.equal(
+        JSON.parse(localStorage.getItem('scene-studio.ideas.v1') || '[]')
+          .length,
+        0,
+      );
+    },
+  );
+  await t.test(
+    'rejection cools down the same family while independent replay can start a fresh case',
+    async () => {
+      await mount();
+      await click('体验 还要等一会儿');
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 1200));
+      });
+      await click('这次不用');
+      await generate('她说还要二十分钟');
+      assert.match(
+        visible('[data-testid="experience-panel"]')[0].textContent!,
+        /冷却期/,
+      );
+      assert.equal(card(), undefined);
+      await click('再聊一句');
+      await click('体验 后排睡着了');
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 1200));
+      });
+      assert.ok(button('好，试一下'));
+    },
+  );
+  await t.test(
+    'driving leaves full ideas in the persistent inbox and parked reopening is editable',
+    async () => {
+      await mount();
+      await click('切换到行驶态');
+      await click('体验 后排睡着了');
+      await settle();
+      assert.equal(card(), undefined);
+      assert.match(
+        visible('[data-testid="experience-panel"]')[0].textContent!,
+        /它的想法/,
+      );
+      assert.equal(
+        JSON.parse(localStorage.getItem('scene-studio.ideas.v1') || '[]')
+          .length,
+        1,
+      );
+      await mount(false);
+      await click('场景应用');
+      await click('它的想法');
+      assert.match(
+        visible('[data-testid="ideas-inbox"]')[0].textContent!,
+        /后排睡着了/,
+      );
+      await click('打开场景 后排睡着了');
+      await settle();
+      assert.ok(card());
+      await click('不用');
+      await settle();
+      assert.equal(stored().length, 0);
+    },
+  );
+  await t.test(
+    'existing scenes are reused before generation and duplicate save presents actual differences',
+    async () => {
+      await mount();
+      await generate();
+      await click('就这样保存');
+      await settle();
+      await click('主动服务弹窗');
+      await click('新建另一个');
+      await settle();
+      await click('体验 还要等一会儿');
+      await settle();
+      assert.match(
+        visible('[data-testid="experience-panel"]')[0].textContent!,
+        /你存过的/,
+      );
+      await click('查看方案');
+      await click('改一下');
+      await click('灯再暗一点');
+      await settle();
+      await click('就这样保存');
+      assert.match(
+        visible('[data-testid="duplicate-panel"]')[0].textContent!,
+        /30%.*20%/,
+      );
+      assert.equal(stored().length, 1);
+      await click('更新原场景');
+      await settle();
+      assert.equal(stored().length, 1);
+      assert.equal(
+        stored()[0].result.scene.actions.find(
+          (a: any) => a.primary === '氛围灯亮度',
+        ).secondary,
+        '20%',
+      );
+    },
+  );
+  await t.test(
+    'proposed and planned actions are never applied by the vehicle simulation',
+    async () => {
+      await mount();
+      await click('场景应用');
+      await click('试用示例 这一首歌');
+      await settle();
+      assert.match(card().textContent!, /规划中/);
+      await click('应用一次 · 演示');
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 3300));
+      });
+      assert.doesNotMatch(
+        visible('[data-testid="vehicle-state"]')[0].textContent!,
+        /Here Comes the Sun/,
+      );
+      assert.match(
+        visible('[data-testid="experience-panel"]')[0].textContent!,
+        /规划.*提议项未应用/,
+      );
+      assert.equal(stored().length, 0);
+      await click('还原本次应用');
+      assert.match(
+        visible('[data-testid="experience-panel"]')[0].textContent!,
+        /已还原/,
+      );
+    },
+  );
+  await t.test(
+    'direct-control counterexample and forward reading view stay distinct from scene creation',
+    async () => {
+      await mount();
+      await click('正视阅读');
+      assert.match(
+        visible('[data-testid="hmi-frame"]')[0].style.transform,
+        /rotateY\(0deg\)/,
+      );
+      await click('这些不该生成场景');
+      await click('体验 直接调灯与温度');
+      assert.match(
+        visible('[data-testid="vehicle-state"]')[0].textContent!,
+        /20%.*24℃/,
+      );
+      assert.equal(card(), undefined);
+      assert.equal(stored().length, 0);
+      await click('再聊一句');
+      await generate('今天心情很不好');
+      assert.equal(card(), undefined);
+      assert.match(
+        visible('[data-testid="experience-panel"]')[0].textContent!,
+        /想说的时候/,
+      );
+    },
+  );
+  await t.test(
+    'quiet mode suppresses suggestions and explicit scene creation bypasses proactive gating',
+    async () => {
+      await mount();
+      await click('打开评审设置');
+      await click('安静模式');
+      await click('关闭评审设置');
+      await settle();
+      await generate('她说还要二十分钟');
+      assert.match(
+        visible('[data-testid="experience-panel"]')[0].textContent!,
+        /安静模式/,
+      );
+      assert.equal(card(), undefined);
+      await generate('做一个雨夜回家的场景');
+      assert.ok(card());
+    },
+  );
+  await t.test(
+    'delayed actions keep their sequence and a later direct control cancels the remaining timeline',
+    async () => {
+      await mount();
+      await click('场景应用');
+      await click('试用示例 先清爽，再安静');
+      await settle();
+      assert.match(card().textContent!, /按顺序应用/);
+      await click('应用一次 · 演示');
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 3400));
+      });
+      assert.match(
+        visible('[data-testid="vehicle-state"]')[0].textContent!,
+        /自动空气净化开启/,
+      );
+      assert.match(
+        visible('[data-testid="vehicle-state"]')[0].textContent!,
+        /音量30%/,
+        'the delayed volume must not be in the initial preview',
+      );
+      await click('主动服务弹窗');
+      await type('描述你想要的场景', '温度26度');
+      await click('发送给小塔');
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 5200));
+      });
+      assert.match(
+        visible('[data-testid="vehicle-state"]')[0].textContent!,
+        /26℃/,
+      );
+      assert.equal(
+        JSON.parse(localStorage.getItem('scene-studio.ideas.v1') || '[]')
+          .length,
+        0,
+        'cancelled timeline cannot enqueue an applied idea',
+      );
     },
   );
   await act(async () => root.unmount());

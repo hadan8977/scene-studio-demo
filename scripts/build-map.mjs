@@ -1,18 +1,13 @@
 // Rebuild the static map from an Overpass JSON export. No network during builds.
 // Usage: node scripts/build-map.mjs path/to/overpass.json
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { project, connectedRoute, pointOnRoute } from '../lib/map-geometry.ts';
 const source = JSON.parse(readFileSync(process.argv[2], 'utf8'));
 if (source.remark || !source.elements?.length)
   throw new Error('Incomplete OSM export');
 const out = new URL('../public/map/', import.meta.url);
 mkdirSync(out, { recursive: true });
-const merc = (lat) =>
-  (Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) * 180) / Math.PI;
-const scale = 1920 / (121.492 - 121.438);
-const point = ({ lon, lat }) => [
-  (lon - 121.438) * scale,
-  (merc(31.192) - merc(lat)) * scale,
-];
+const point = ({ lon, lat }) => project([lon, lat]);
 const escape = (s) =>
   String(s)
     .replaceAll('&', '&amp;')
@@ -108,6 +103,19 @@ const museum = source.elements.find(
 if (!museum || paths.highlight.length === 0 || paths.water.length === 0)
   throw new Error('Map landmarks missing');
 const [mx, my] = point(museum);
+const route = connectedRoute(
+  source.elements
+    .filter(
+      (e) => e.type === 'way' && e.tags?.name === '龙腾大道' && e.geometry,
+    )
+    .map((e) => e.geometry.map(point)),
+);
+const vehicle = pointOnRoute(route, 0.2);
+paths.highlight = [
+  route
+    .map((p, i) => (i ? 'L' : 'M') + p.map((n) => n.toFixed(2)).join(','))
+    .join(''),
+];
 features.push({
   type: 'Feature',
   id: `node/${museum.id}`,
@@ -121,6 +129,8 @@ const metadata = {
   timestamp: source.osm3s.timestamp_osm_base,
   queryBounds: [121.438, 31.162, 121.492, 31.202],
   projectedLandmark: [mx, my],
+  route,
+  vehicle,
 };
 writeFileSync(
   new URL('west-bund.geojson', out),
@@ -142,10 +152,12 @@ ${group('major', 'fill="none" stroke="#444a4e" stroke-width="7" stroke-linecap="
 ${group('tunnel', 'fill="none" stroke="#444a4e" stroke-opacity="0.7" stroke-width="3" stroke-dasharray="7 7"')}
 ${group('highlight', 'fill="none" stroke="#cdec52" stroke-opacity="0.1" stroke-width="22" stroke-linecap="round"')}
 ${group('highlight', 'fill="none" stroke="#cdec52" stroke-opacity="0.8" stroke-width="5" stroke-linecap="round"')}
-<g fill="#90999d" font-family="sans-serif" font-size="15" text-anchor="middle" stroke="#101317" stroke-width="5" paint-order="stroke" stroke-linejoin="round">${labels.map((l) => `<text transform="translate(${l.x.toFixed(1)} ${l.y.toFixed(1)}) rotate(${l.angle.toFixed(1)})" dy="-10">${escape(l.name)}</text>`).join('')}</g>
+<g fill="#90999d" font-family="sans-serif" font-size="21" text-anchor="middle" stroke="#101317" stroke-width="5" paint-order="stroke" stroke-linejoin="round">${labels.map((l) => `<text transform="translate(${l.x.toFixed(1)} ${l.y.toFixed(1)}) rotate(${l.angle.toFixed(1)})" dy="-10">${escape(l.name)}</text>`).join('')}</g>
 <text x="930" y="365" fill="#52646c" font-family="sans-serif" font-size="23" letter-spacing="12" transform="rotate(-60 930 365)">黄浦江</text>
-<circle cx="${mx}" cy="${my}" r="19" fill="#cdec52" fill-opacity="0.1"/><circle cx="${mx}" cy="${my}" r="6" fill="#cdec52" stroke="#15171a" stroke-width="3"/>
-<text x="${mx - 24}" y="${my - 22}" text-anchor="end" fill="#e5e8dc" font-family="sans-serif" font-size="19" stroke="#101317" stroke-width="5" paint-order="stroke">龙美术馆 · 西岸</text>
+<circle cx="${mx}" cy="${my}" r="19" fill="#8b939c" fill-opacity="0.1"/><circle cx="${mx}" cy="${my}" r="6" fill="#a3abb2" stroke="#15171a" stroke-width="3"/>
+<text x="${mx - 24}" y="${my - 22}" text-anchor="end" fill="#e5e8dc" font-family="sans-serif" font-size="25" stroke="#101317" stroke-width="5" paint-order="stroke">龙美术馆 · 西岸</text>
+<g id="demo-vehicle" transform="translate(${vehicle.point[0]} ${vehicle.point[1]}) rotate(${vehicle.angle})"><circle r="30" fill="#0b0c0e" stroke="#cdec52" stroke-opacity="0.25" stroke-width="2"/><path d="M0 -20 L14 15 L0 9 L-14 15 Z" fill="#cdec52" stroke="#e8f8a9" stroke-width="1.5"/></g>
+<circle cx="${route.at(-1)[0]}" cy="${route.at(-1)[1]}" r="7" fill="#15171a" stroke="#cdec52" stroke-width="3"/>
 </svg>`;
 writeFileSync(new URL('west-bund.svg', out), svg);
 writeFileSync(new URL('source.json', out), JSON.stringify(metadata, null, 2));

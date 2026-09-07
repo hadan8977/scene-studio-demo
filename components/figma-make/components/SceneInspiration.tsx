@@ -1,39 +1,10 @@
-import {
-  ArrowUpRight,
-  MoonStar,
-  CloudRain,
-  Coffee,
-  Languages,
-  ShieldCheck,
-  CircleHelp,
-  Clock3,
-} from 'lucide-react';
-import { EXAMPLES } from '@/lib/examples';
+import { useState } from 'react';
+import { ArrowUpRight, Sparkles, Clock3 } from 'lucide-react';
+import { DEMO_CASES } from '@/lib/demo-cases';
+import { capabilities } from '@/lib/scene';
 
-const MOMENTS = [
-  {
-    id: 'wait',
-    icon: Coffee,
-    eyebrow: 'TAKE A MOMENT',
-    title: '把等待，留给自己',
-    description: '灯光收一点，让车里舒服一点。',
-  },
-  {
-    id: 'rain',
-    icon: CloudRain,
-    eyebrow: 'ON THE WAY HOME',
-    title: '雨夜里的归途',
-    description: '从一句话，安排光、声与温度。',
-  },
-  {
-    id: 'quiet',
-    icon: MoonStar,
-    eyebrow: 'A LITTLE QUIETER',
-    title: '轻一点，别吵醒后排',
-    description: '声音留在前排，安静留给后排。',
-  },
-];
-
+const cases = DEMO_CASES.filter((c) => c.entry === 'create');
+const categories = ['全部', ...new Set(cases.map((c) => c.category))];
 export function SceneInspiration({
   onTry,
   disabled,
@@ -41,63 +12,81 @@ export function SceneInspiration({
   onTry: (text: string) => void;
   disabled: boolean;
 }) {
+  const [category, setCategory] = useState('全部');
+  const selected = cases.filter(
+    (c) => category === '全部' || c.category === category,
+  );
   return (
     <section aria-label="场景灵感" className="mt-8">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-[18px] text-foreground">从一个时刻开始</h2>
-        <span className="text-[12px] text-muted-foreground">
-          示例提案 · 你决定是否保存
+      <div className="flex items-end justify-between">
+        <div>
+          <span className="font-mono text-[17px] tracking-[.2em] text-primary/70">
+            MOMENTS, MADE YOURS
+          </span>
+          <h2 className="mt-2 text-[32px]">不止一种舒服的方式</h2>
+        </div>
+        <span className="text-[19px] text-muted-foreground">
+          {cases.length} 个组合 · 示例提案
         </span>
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        {MOMENTS.map((m, i) => (
+      <p className="mt-2 text-[22px] text-muted-foreground">
+        从一个时刻开始，再把它改成你的。规划与提议能力会在方案中注明。
+      </p>
+      <div className="my-5 flex flex-wrap gap-2" aria-label="场景灵感分类">
+        {categories.map((cat) => (
           <button
-            key={m.id}
-            disabled={disabled}
-            aria-label={
-              '试用示例 ' + EXAMPLES.find((e) => e.id === m.id)!.label
-            }
-            onClick={() => onTry(EXAMPLES.find((e) => e.id === m.id)!.input)}
-            className="group relative overflow-hidden rounded-3xl border border-border bg-card p-6 text-left transition-colors hover:border-primary/40 disabled:opacity-40"
+            key={cat}
+            aria-pressed={category === cat}
+            onClick={() => setCategory(cat)}
+            className={`min-h-12 rounded-full border px-4 text-[20px] ${category === cat ? 'border-primary/30 bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}
           >
-            <div className="mb-8 flex items-start justify-between">
-              <m.icon className="h-8 w-8 text-primary/80" strokeWidth={1.2} />
-              <span className="font-mono text-[11px] tracking-widest text-muted-foreground/40">
-                0{i + 1}
-              </span>
-            </div>
-            <div className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground/60">
-              {m.eyebrow}
-            </div>
-            <h3 className="mt-2 text-[21px] tracking-tight">{m.title}</h3>
-            <p className="mt-2 text-[13px] text-muted-foreground">
-              {m.description}
-            </p>
-            <div className="mt-6 flex items-center gap-1.5 text-[12px] text-primary">
-              看看提案
-              <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </div>
+            {cat}
           </button>
         ))}
       </div>
-      <div className="mt-5 flex flex-wrap items-center gap-3 text-[12px] text-muted-foreground">
-        <span>也可以试试</span>
-        {[
-          { id: 'english', icon: Languages },
-          { id: 'clarify', icon: CircleHelp },
-          { id: 'boundary', icon: ShieldCheck },
-          { id: 'planned', icon: Clock3 },
-        ].map((m) => (
-          <button
-            key={m.id}
-            disabled={disabled}
-            onClick={() => onTry(EXAMPLES.find((e) => e.id === m.id)!.input)}
-            className="flex min-h-10 items-center gap-2 rounded-full border border-border px-3.5 hover:border-primary/30 hover:text-foreground"
-          >
-            <m.icon className="h-3.5 w-3.5" />
-            {EXAMPLES.find((e) => e.id === m.id)!.label}
-          </button>
-        ))}
+      <div className="grid grid-cols-2 gap-4">
+        {selected.map((c, i) => {
+          const conceptual = c.actions?.some(([p]) => {
+            const cap = capabilities.find((x) => x.zh === p);
+            return cap && !['released', 'no_ux'].includes(cap.maturity);
+          });
+          return (
+            <button
+              key={c.id}
+              disabled={disabled}
+              aria-label={'试用示例 ' + c.title}
+              onClick={() => onTry(c.input)}
+              className="group relative rounded-[26px] border border-border bg-card p-6 text-left transition-colors hover:border-primary/40 disabled:opacity-40"
+            >
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-[17px] text-primary/70">
+                  <Sparkles className="h-5 w-5" />
+                  {c.category}
+                </span>
+                <span className="font-mono text-[17px] text-muted-foreground/60">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+              </div>
+              <h3 className="mt-5 text-[30px]">{c.title}</h3>
+              <p className="mt-2 text-[22px] text-foreground/80">“{c.input}”</p>
+              <p className="mt-3 text-[20px] leading-relaxed text-muted-foreground">
+                {c.summary}
+              </p>
+              <div className="mt-5 flex items-center justify-between border-t border-border/60 pt-4 text-[18px] text-primary">
+                <span>
+                  看看提案{' '}
+                  <ArrowUpRight className="inline h-5 w-5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </span>
+                {conceptual && (
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Clock3 className="h-4 w-4" />
+                    含未落地能力
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </section>
   );

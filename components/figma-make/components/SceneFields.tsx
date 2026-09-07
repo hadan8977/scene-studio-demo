@@ -64,12 +64,12 @@ function CustomValue({
         maxLength={80}
         onChange={(e) => setDraft(e.target.value)}
         placeholder={structuredFields[primary].hint}
-        className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-2 text-[12px] text-foreground"
+        className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-2 text-[18px] text-foreground"
       />
       <button
         disabled={!valid || draft === value}
         onClick={() => onApply(draft.trim())}
-        className="rounded-lg px-2 py-2 text-[12px] text-primary disabled:opacity-30"
+        className="rounded-lg px-2 py-2 text-[18px] text-primary disabled:opacity-30"
       >
         应用
       </button>
@@ -87,14 +87,14 @@ export function SceneFields({ gen }: { gen: Generation }) {
   const update = gen.controller.updateScene;
   return (
     <details
-      className="rounded-xl border border-primary/20 bg-secondary/30 p-3 text-[13px]"
+      className="rounded-xl border border-primary/20 bg-secondary/30 p-3 text-[20px]"
       data-testid="scene-fields"
     >
       <summary className="flex cursor-pointer items-center justify-between text-primary">
         调整名称、条件和动作
         <ChevronDown className="h-4 w-4" />
       </summary>
-      <label className="mt-4 block text-[12px] text-muted-foreground">
+      <label className="mt-4 block text-[18px] text-muted-foreground">
         场景名称
         <input
           aria-label="场景名称"
@@ -103,12 +103,12 @@ export function SceneFields({ gen }: { gen: Generation }) {
           onChange={(e) =>
             update({ ...scene, name: e.target.value }, ['场景名称'])
           }
-          className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-[14px] text-foreground"
+          className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-[22px] text-foreground"
         />
       </label>
       {(['conditions', 'actions'] as const).map((kind) => (
         <div key={kind} className="mt-4 space-y-2">
-          <div className="flex items-center justify-between text-[12px] text-muted-foreground">
+          <div className="flex items-center justify-between text-[18px] text-muted-foreground">
             <span>{kind === 'conditions' ? '触发条件' : '场景动作'}</span>
             {kind === 'conditions' && scene.conditions.length > 1 && (
               <button
@@ -129,7 +129,7 @@ export function SceneFields({ gen }: { gen: Generation }) {
               key={`${entry.primary}:${i}`}
               className="flex items-center gap-2"
             >
-              <span className="min-w-0 flex-1 text-[12px] text-foreground/80">
+              <span className="min-w-0 flex-1 text-[18px] text-foreground/80">
                 {entry.primary}
               </span>
               {kind === 'conditions' && (
@@ -147,7 +147,7 @@ export function SceneFields({ gen }: { gen: Generation }) {
                       [entry.primary],
                     )
                   }
-                  className="max-w-14 rounded border border-border bg-background px-1 py-2 text-[12px]"
+                  className="max-w-20 rounded border border-border bg-background px-1 py-2 text-[18px]"
                 >
                   {(Array.isArray(
                     capabilities.find((c) => c.zh === entry.primary)
@@ -192,7 +192,7 @@ export function SceneFields({ gen }: { gen: Generation }) {
                       [entry.primary],
                     )
                   }
-                  className="max-w-[150px] rounded-lg border border-border bg-background px-2 py-2 text-[12px] text-primary"
+                  className="max-w-[240px] rounded-lg border border-border bg-background px-2 py-2 text-[18px] text-primary"
                 >
                   {values(entry.primary, kind === 'conditions').map((v) => (
                     <option key={v}>{v}</option>
@@ -244,7 +244,7 @@ export function SceneFields({ gen }: { gen: Generation }) {
                     [primary],
                   );
               }}
-              className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-2 text-[12px] text-muted-foreground"
+              className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-2 text-[18px] text-muted-foreground"
             >
               <option value="">
                 {kind === 'conditions' ? '添加触发条件' : '添加动作'}
@@ -270,7 +270,7 @@ export function SceneFields({ gen }: { gen: Generation }) {
           </div>
           {pending?.kind === kind && (
             <div className="rounded-lg border border-primary/20 p-3">
-              <div className="mb-2 flex items-center justify-between text-[12px] text-muted-foreground">
+              <div className="mb-2 flex items-center justify-between text-[18px] text-muted-foreground">
                 {pending.primary}
                 <button aria-label="取消添加" onClick={() => setPending(null)}>
                   <X className="h-3.5 w-3.5" />

@@ -25,15 +25,29 @@ const GROUP_META: Record<
   ActionGroup,
   { icon: typeof Lightbulb; label: string }
 > = {
-  光: { icon: Lightbulb, label: '光' },
-  声: { icon: Volume2, label: '声' },
-  气: { icon: Wind, label: '气' },
-  温: { icon: Thermometer, label: '温' },
-  话: { icon: MessageSquare, label: '话' },
-  供: { icon: Sparkles, label: '供' },
-  其他: { icon: Sparkles, label: '其他' },
+  光: { icon: Lightbulb, label: '灯光与屏幕' },
+  声: { icon: Volume2, label: '声音' },
+  气: { icon: Wind, label: '空气与香氛' },
+  温: { icon: Thermometer, label: '温度与座椅' },
+  话: { icon: MessageSquare, label: '播报与出口' },
+  供: { icon: Sparkles, label: '播报与出口' },
+  其他: { icon: Sparkles, label: '播报与出口' },
 };
-const GROUP_ORDER: ActionGroup[] = ['光', '声', '气', '温', '话', '供', '其他'];
+const GROUP_ORDER = [
+  '官方预设 · 作为基础',
+  '灯光与屏幕',
+  '声音',
+  '空气与香氛',
+  '温度与座椅',
+  '车窗与门',
+  '播报与出口',
+];
+const displayGroup = (a: Action) =>
+  /进入情景模式|退出情景模式/.test(a.capability)
+    ? GROUP_ORDER[0]
+    : /车窗|后门|前门|遮阳帘/.test(a.capability)
+      ? '车窗与门'
+      : GROUP_META[a.group].label;
 
 function num(text: string | null): number | null {
   if (!text) return null;
@@ -44,19 +58,19 @@ function num(text: string | null): number | null {
 function StatusTag({ status }: { status: Action['status'] }) {
   if (status === 'planned')
     return (
-      <span className="rounded border border-border px-1.5 py-px text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
+      <span className="rounded border border-border px-1.5 py-px text-[16px] font-mono uppercase tracking-wide text-muted-foreground">
         规划中
       </span>
     );
   if (status === 'proposed')
     return (
-      <span className="rounded border border-primary/40 px-1.5 py-px text-[10px] font-mono uppercase tracking-wide text-primary/90">
+      <span className="rounded border border-primary/40 px-1.5 py-px text-[16px] font-mono uppercase tracking-wide text-primary/90">
         提议中
       </span>
     );
   if (status === 'adjusted')
     return (
-      <span className="rounded bg-primary/15 px-1.5 py-px text-[10px] font-mono uppercase tracking-wide text-primary">
+      <span className="rounded bg-primary/15 px-1.5 py-px text-[16px] font-mono uppercase tracking-wide text-primary">
         已调整
       </span>
     );
@@ -69,7 +83,7 @@ function Value({ action }: { action: Action }) {
   const val = action.finalValue ?? action.requested;
   if (action.group === '话') {
     return (
-      <span className="max-w-[180px] truncate text-right text-[13px] text-foreground/85">
+      <span className="max-w-[240px] break-words text-right text-[22px] text-foreground/85">
         “{val}”
       </span>
     );
@@ -89,7 +103,7 @@ function Value({ action }: { action: Action }) {
               style={{ width: `${pct * 100}%` }}
             />
           </div>
-          <span className="w-12 text-right font-mono text-[14px] tabular-nums text-foreground">
+          <span className="w-16 text-right font-mono text-[22px] tabular-nums text-foreground">
             {val}
           </span>
         </div>
@@ -99,7 +113,7 @@ function Value({ action }: { action: Action }) {
   if (spec && spec.boolean) {
     const off = /关|off|停/i.test(val);
     return (
-      <span className="flex items-center gap-1.5 font-mono text-[13px] text-foreground/90">
+      <span className="flex items-center gap-1.5 font-mono text-[20px] text-foreground/90">
         <span
           className={`h-1.5 w-1.5 rounded-full ${off ? 'bg-muted-foreground/50' : 'bg-primary'}`}
         />{' '}
@@ -108,7 +122,7 @@ function Value({ action }: { action: Action }) {
     );
   }
   return (
-    <span className="max-w-[160px] truncate text-right font-mono text-[13px] text-foreground/90">
+    <span className="block max-w-[220px] break-words text-right font-mono text-[22px] text-foreground/90">
       {val}
     </span>
   );
@@ -123,19 +137,19 @@ function Row({ action, changed }: { action: Action; changed: boolean }) {
       className={`flex items-center gap-3 rounded-lg px-2 py-2 transition-colors ${changed ? 'bg-primary/[0.08]' : ''}`}
     >
       <div
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${changed ? 'bg-primary/20 text-primary' : 'bg-accent text-muted-foreground'}`}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${changed ? 'bg-primary/20 text-primary' : 'bg-accent text-muted-foreground'}`}
       >
-        <Icon className="h-3.5 w-3.5" />
+        <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span
-            className={`text-[16px] ${soft ? 'text-muted-foreground' : 'text-foreground'}`}
+            className={`text-[24px] ${soft ? 'text-muted-foreground' : 'text-foreground'}`}
           >
             {action.target}
           </span>
           {changed && (
-            <span className="shrink-0 font-mono text-[9px] uppercase text-primary">
+            <span className="shrink-0 font-mono text-[16px] uppercase text-primary">
               刚改
             </span>
           )}
@@ -143,13 +157,13 @@ function Row({ action, changed }: { action: Action; changed: boolean }) {
         </div>
         {action.status === 'adjusted' &&
           action.requested !== action.finalValue && (
-            <div className="mt-0.5 font-mono text-[11px] text-muted-foreground/70">
+            <div className="mt-0.5 font-mono text-[17px] text-muted-foreground/70">
               <span className="line-through">{action.requested}</span> →{' '}
               {action.finalValue} · {action.reason}
             </div>
           )}
         {action.status !== 'adjusted' && action.reason && (
-          <div className="mt-0.5 text-[11px] text-muted-foreground/70">
+          <div className="mt-0.5 text-[17px] text-muted-foreground/70">
             {action.reason}
           </div>
         )}
@@ -175,6 +189,7 @@ interface SceneCardProps {
   onSave: () => void;
   onEdit: () => void;
   onDiscard: () => void;
+  onApply?: () => void;
   editor?: ReactNode;
 }
 
@@ -182,7 +197,7 @@ export function SceneCard(props: SceneCardProps) {
   const { scene, understanding, heard, changedIds, sourceBadge, saved } = props;
   const groups = GROUP_ORDER.map((group) => ({
     group,
-    actions: scene.actions.filter((a) => a.group === group),
+    actions: scene.actions.filter((a) => displayGroup(a) === group),
   })).filter((g) => g.actions.length);
   const quickEdits = [
     { capability: '氛围灯亮度', label: '灯再暗一点' },
@@ -193,7 +208,7 @@ export function SceneCard(props: SceneCardProps) {
   return (
     <div
       className="flex min-h-0 flex-col"
-      style={{ maxHeight: 'var(--scene-body-limit, 780px)' }}
+      style={{ maxHeight: 'var(--scene-body-limit, 790px)' }}
       aria-label="场景生成卡片"
     >
       {/* 可滚动内容 */}
@@ -201,11 +216,11 @@ export function SceneCard(props: SceneCardProps) {
         {/* 标题 */}
         <div>
           <div className="mb-1.5 flex items-center gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">
+            <span className="font-mono text-[16px] uppercase tracking-[0.2em] text-primary">
               Scene
             </span>
             <span
-              className={`rounded px-1.5 py-px text-[10px] font-mono ${sourceBadge === 'ai' ? 'bg-primary/15 text-primary' : 'border border-border text-muted-foreground'}`}
+              className={`rounded px-1.5 py-px text-[16px] font-mono ${sourceBadge === 'ai' ? 'bg-primary/15 text-primary' : 'border border-border text-muted-foreground'}`}
             >
               {sourceBadge === 'ai' ? 'AI' : '示例'}
             </span>
@@ -213,19 +228,19 @@ export function SceneCard(props: SceneCardProps) {
           <motion.h2
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[26px] leading-tight tracking-tight text-foreground"
+            className="text-[36px] leading-tight tracking-tight text-foreground"
           >
             {scene.name}
           </motion.h2>
           {understanding && (
-            <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+            <p className="mt-2 text-[22px] leading-relaxed text-muted-foreground">
               {understanding}
             </p>
           )}
         </div>
 
         {/* 听到了 + 条件 */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[12px]">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[18px]">
           <span className="flex items-center gap-1 text-muted-foreground/70">
             <Quote className="h-3 w-3" />“{heard}”
           </span>
@@ -273,41 +288,60 @@ export function SceneCard(props: SceneCardProps) {
         {changedIds.size > 0 && (
           <div
             role="status"
-            className="flex items-center gap-2 text-[12px] text-primary"
+            className="flex items-center gap-2 text-[18px] text-primary"
           >
             <Check className="h-3.5 w-3.5" />
             刚改了 {Array.from(changedIds).join('、')}，其余保留。
           </div>
         )}
-        {groups.length > 0 && (
-          <div
-            className="divide-y divide-border/50 border-y border-border/60"
-            aria-label="按元素分组的动作"
+        {scene.actions.some((a) => a.capability === '延时') ? (
+          <section
+            aria-label="按顺序应用"
+            className="border-y border-border py-3"
           >
-            {groups.map(({ group, actions }, index) => (
-              <motion.section
-                key={group}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.06, duration: 0.24 }}
-                className="py-2"
-                aria-label={group + '的动作'}
-              >
-                <div className="px-2 pb-0.5 font-mono text-[10px] tracking-[0.16em] text-muted-foreground/70">
-                  {group}
+            <p className="mb-2 text-[18px] text-primary">按顺序应用</p>
+            {scene.actions.map((a, i) => (
+              <div className="flex items-center gap-2" key={a.id}>
+                <span className="text-[18px] text-muted-foreground">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <Row action={a} changed={changedIds.has(a.id)} />
                 </div>
-                {actions.map((a) => (
-                  <Row key={a.id} action={a} changed={changedIds.has(a.id)} />
-                ))}
-              </motion.section>
+              </div>
             ))}
-          </div>
+          </section>
+        ) : (
+          groups.length > 0 && (
+            <div
+              className="divide-y divide-border/50 border-y border-border/60"
+              aria-label="按元素分组的动作"
+            >
+              {groups.map(({ group, actions }, index) => (
+                <motion.section
+                  key={group}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.06, duration: 0.24 }}
+                  className="py-2"
+                  aria-label={group + '的动作'}
+                >
+                  <div className="px-2 pb-0.5 text-[18px] text-muted-foreground">
+                    {group}
+                  </div>
+                  {actions.map((a) => (
+                    <Row key={a.id} action={a} changed={changedIds.has(a.id)} />
+                  ))}
+                </motion.section>
+              ))}
+            </div>
+          )
         )}
 
         {/* 偏好 + 做不了 */}
         {scene.memory.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 text-[12px]">
-            <span className="font-mono text-[10px] uppercase tracking-wide text-primary/70">
+          <div className="flex flex-wrap items-center gap-2 text-[18px]">
+            <span className="font-mono text-[16px] uppercase tracking-wide text-primary/70">
               <Brain className="mr-1 inline h-3 w-3" /> 与这些偏好一致
             </span>
             {scene.memory.map((m) => (
@@ -322,20 +356,20 @@ export function SceneCard(props: SceneCardProps) {
         )}
         {scene.unsupported.length > 0 && (
           <div className="space-y-1 rounded-2xl border border-border/50 bg-secondary/20 px-4 py-3">
-            <div className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+            <div className="mb-1 flex items-center gap-1.5 font-mono text-[16px] uppercase tracking-wide text-muted-foreground">
               <Ban className="h-3 w-3" /> 做不了
             </div>
             {scene.unsupported.map((u) => (
               <div
                 key={u.id}
-                className="flex items-start justify-between gap-3 text-[12px]"
+                className="flex items-start justify-between gap-3 text-[18px]"
               >
                 <span className="text-muted-foreground/70">
                   <span className="line-through">
                     {u.target} {u.requested}
                   </span>
                   <span
-                    className={`ml-2 rounded px-1 py-px text-[10px] ${u.status === 'forbidden' ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-muted-foreground'}`}
+                    className={`ml-2 rounded px-1 py-px text-[16px] ${u.status === 'forbidden' ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-muted-foreground'}`}
                   >
                     {u.status === 'forbidden' ? '禁止' : '不支持'}
                   </span>
@@ -349,12 +383,12 @@ export function SceneCard(props: SceneCardProps) {
         )}
 
         {scene.say && (
-          <div className="flex items-start gap-2 text-[13px] text-foreground/75">
+          <div className="flex items-start gap-2 text-[20px] text-foreground/75">
             <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />{' '}
             小塔会说：“{scene.say}”
           </div>
         )}
-        <details className="group border-t border-border/50 pb-4 pt-3 text-[12px] text-muted-foreground">
+        <details className="group border-t border-border/50 pb-4 pt-3 text-[18px] text-muted-foreground">
           <summary className="flex cursor-pointer list-none items-center justify-between py-1">
             为什么这样安排
             <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
@@ -385,11 +419,11 @@ export function SceneCard(props: SceneCardProps) {
           scene.offer.map((o) => (
             <div
               key={o.id}
-              className="flex items-center gap-2 text-[12px] text-muted-foreground"
+              className="flex items-center gap-2 text-[18px] text-muted-foreground"
             >
               <Sparkles className="h-3 w-3 text-primary/70" />
               {o.label}
-              <span className="font-mono text-[10px]">
+              <span className="font-mono text-[16px]">
                 {o.status === 'proposed' ? '提议中' : '规划中'}
               </span>
             </div>
@@ -400,7 +434,7 @@ export function SceneCard(props: SceneCardProps) {
             {scene.warnings.map((w) => (
               <p
                 key={w.id}
-                className="text-[12px] leading-relaxed text-muted-foreground"
+                className="text-[18px] leading-relaxed text-muted-foreground"
               >
                 {w.label}
               </p>
@@ -408,7 +442,7 @@ export function SceneCard(props: SceneCardProps) {
           </div>
         )}
         {!scene.canSave && scene.blockReason && (
-          <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-[12px] text-destructive">
+          <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-[18px] text-destructive">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             {scene.blockReason}
           </div>
@@ -418,7 +452,7 @@ export function SceneCard(props: SceneCardProps) {
       {/* 决定坞（贴卡片底部） */}
       <div className="shrink-0 space-y-2.5 border-t border-border/60 bg-card/80 px-7 py-4">
         {saved && (
-          <div className="flex items-center gap-2 rounded-lg bg-primary/15 px-3 py-1.5 text-[12px] text-primary">
+          <div className="flex items-center gap-2 rounded-lg bg-primary/15 px-3 py-1.5 text-[18px] text-primary">
             <Check className="h-3.5 w-3.5" /> 已存入「我的场景」—
             只是保存，车辆还没执行
           </div>
@@ -431,7 +465,7 @@ export function SceneCard(props: SceneCardProps) {
                   <button
                     key={e.capability}
                     onClick={() => props.onSubmitEdit(e.label)}
-                    className="rounded-full border border-border bg-secondary/50 px-3 py-2 text-[12px] text-foreground/80 hover:border-primary/40"
+                    className="rounded-full border border-border bg-secondary/50 px-3 py-2 text-[18px] text-foreground/80 hover:border-primary/40"
                   >
                     {e.label}
                   </button>
@@ -450,39 +484,48 @@ export function SceneCard(props: SceneCardProps) {
                 }}
                 autoFocus
                 placeholder="说一句，只改你提到的这一项…"
-                className="flex-1 bg-transparent px-2 py-1.5 text-[14px] text-foreground outline-none placeholder:text-muted-foreground/50"
+                className="flex-1 bg-transparent px-2 py-1.5 text-[22px] text-foreground outline-none placeholder:text-muted-foreground/50"
               />
               <button
                 disabled={!props.editText.trim()}
                 aria-label="提交修改"
                 onClick={() => props.onSubmitEdit()}
-                className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[12px] text-primary-foreground"
+                className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[18px] text-primary-foreground"
               >
                 <CornerDownLeft className="h-3.5 w-3.5" /> 改
               </button>
             </div>
           </div>
         )}
-        <p className="text-[11px] text-muted-foreground/60">
-          保存场景，不执行车辆动作
-        </p>
+        <div className="flex items-center justify-between text-[18px] text-muted-foreground">
+          <span>保存场景，不执行车辆动作</span>
+          {props.onApply && !props.editing && (
+            <button
+              disabled={!scene.canSave}
+              onClick={props.onApply}
+              className="min-h-12 text-[20px] text-primary disabled:opacity-30"
+            >
+              应用一次 · 演示
+            </button>
+          )}
+        </div>
         <div className="flex gap-2">
           <button
             onClick={props.onSave}
             disabled={!scene.canSave || saved}
-            className="flex min-h-12 flex-[1.5] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-[15px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex min-h-14 flex-[1.5] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-[23px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Check className="h-4 w-4" /> {saved ? '已保存' : '就这样保存'}
           </button>
           <button
             onClick={props.onEdit}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-4 py-2.5 text-[14px] text-foreground transition-colors hover:border-primary/40"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-4 py-2.5 text-[22px] text-foreground transition-colors hover:border-primary/40"
           >
             <Pencil className="h-4 w-4" /> 改一下
           </button>
           <button
             onClick={props.onDiscard}
-            className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-[14px] text-muted-foreground transition-colors hover:text-foreground"
+            className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-[22px] text-muted-foreground transition-colors hover:text-foreground"
           >
             <X className="h-4 w-4" /> 不用
           </button>

@@ -24,6 +24,9 @@ export default function App() {
   useEffect(() => {
     if (gen.saveVersion) setView('manager');
   }, [gen.saveVersion]);
+  useEffect(() => {
+    if (gen.experience.viewRequest) setView('manager');
+  }, [gen.experience.viewRequest]);
 
   const chrome = (
     <div className="flex items-center gap-1 rounded-full border border-white/10 bg-black/60 p-1 backdrop-blur-md">
@@ -33,7 +36,7 @@ export default function App() {
           onClick={() => setView(v.id)}
           aria-label={v.label}
           aria-pressed={view === v.id}
-          className={`flex items-center gap-2 rounded-full px-4 py-2 text-[13px] transition-colors ${view === v.id ? 'bg-primary text-primary-foreground' : 'text-white/60 hover:text-white'}`}
+          className={`flex items-center gap-2 rounded-full px-4 py-2 text-[20px] transition-colors ${view === v.id ? 'bg-primary text-primary-foreground' : 'text-white/60 hover:text-white'}`}
         >
           <v.icon className="h-4 w-4" /> {v.label}
         </button>
@@ -58,6 +61,7 @@ export default function App() {
         </div>
 
         <ReviewPanel
+          experience={gen.experience}
           open={review}
           onClose={() => setReview(false)}
           mode={gen.mode}
@@ -85,7 +89,7 @@ export default function App() {
             className="pointer-events-none absolute inset-x-0 top-5 z-[80] flex justify-center"
           >
             <div
-              className={`rounded-full border px-5 py-2.5 text-[14px] shadow-xl ${gen.controller.notice.error ? 'border-destructive/30 bg-popover text-destructive' : 'border-primary/20 bg-popover text-primary'}`}
+              className={`rounded-full border px-5 py-2.5 text-[22px] shadow-xl ${gen.controller.notice.error ? 'border-destructive/30 bg-popover text-destructive' : 'border-primary/20 bg-popover text-primary'}`}
             >
               {gen.controller.notice.text}
             </div>

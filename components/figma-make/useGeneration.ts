@@ -10,10 +10,15 @@ import {
 } from './bridge';
 import { PROFILES } from './domain/profiles';
 import type { DrivingState, SavedScene } from './domain/types';
+import { useExperience } from './useExperience';
+import { similarScene, mergeScene } from '@/lib/scene-similarity';
+import type { SavedScene as StoredScene } from '@/lib/storage';
 
 /** Figma Make's component API, connected to the existing real generation service. */
 export function useGeneration() {
   const c = useSceneController(false);
+  const experience = useExperience(c);
+  const [duplicate, setDuplicate] = useState<StoredScene | null>(null);
   const [saveVersion, setSaveVersion] = useState(0);
   const lastRequest = useRef<{
     text: string;
@@ -53,11 +58,33 @@ export function useGeneration() {
       return;
     }
     lastRequest.current = { text, fresh, source };
-    return c.run(text, fresh, source);
+    return fresh ? experience.submit(text, source) : c.run(text, false, source);
   }
-  function handleSave() {
+  function handleSave(choice?: 'separate' | 'update') {
     try {
-      c.saveCurrent();
+      if (!c.result) return false;
+      const same = similarScene(
+        c.result.scene,
+        c.saved,
+        c.activeId || undefined,
+      );
+      if (!choice && same) {
+        setDuplicate(same);
+        return false;
+      }
+      const merged =
+        choice === 'update' && duplicate
+          ? mergeScene(duplicate.result.scene, c.result.scene, c.ctx)
+          : null;
+      if (merged && !merged.savable) {
+        c.showToast('合并后仍需补充信息，请分别保存', true);
+        return false;
+      }
+      c.saveCurrent(
+        merged && duplicate ? { id: duplicate.id, result: merged } : undefined,
+      );
+      experience.clearSavedIdea(c.heard);
+      setDuplicate(null);
       c.setEditing(false);
       setSaveVersion((v) => v + 1);
       return true;
@@ -90,7 +117,7 @@ export function useGeneration() {
     error,
     mode,
     setMode: (m: 'real' | 'example') => {
-      c.cancel();
+      experience.cancel();
       c.setError('');
       c.setMode(m === 'real' ? 'live' : 'example');
     },
@@ -148,12 +175,18 @@ export function useGeneration() {
     clarifyText: c.input,
     setClarifyText: c.setInput,
     submitInput: (text = c.input) => request(text, !c.result),
+    submitVoice: (text = c.input) => {
+      if (c.editing) return request(text, false);
+      lastRequest.current = { text, fresh: true };
+      return experience.submit(text, undefined, false, 'voice');
+    },
     submitEdit: (text = c.input) => request(text, false),
     submitClarify: (text = c.input) => request(text, false),
     playExample: (text: string) => {
-      c.setMode('example');
-      return request(text, true, 'example');
+      return experience.submit(text, 'example', true, 'create');
     },
+    playAmbient: (text: string) =>
+      experience.submit(text, 'example', true, 'voice'),
     retry: () =>
       lastRequest.current
         ? request(
@@ -162,14 +195,24 @@ export function useGeneration() {
             lastRequest.current.source,
           )
         : undefined,
-    reset: c.discard,
-    cancel: c.cancel,
+    reset: () => {
+      setDuplicate(null);
+      experience.reset();
+    },
+    cancel: experience.cancel,
     handleSave,
+    duplicate,
+    cancelDuplicate: () => setDuplicate(null),
+    experience,
     scenes: c.saved.map(toViewSaved),
     remove: c.deleteSaved,
     openSaved: (s: SavedScene) => {
       const stored = c.saved.find((x) => x.id === s.id);
-      if (stored) c.openSaved(stored);
+      if (stored) {
+        experience.reset();
+        c.openSaved(stored);
+        experience.showProposal();
+      }
     },
     controller: c,
   };

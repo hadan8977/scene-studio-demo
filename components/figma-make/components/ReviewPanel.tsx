@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Circle, ArrowRight, Check, Pencil, Ban } from 'lucide-react';
 import type { GenerationResult, DrivingState, Profile } from '../domain/types';
 import { PROFILES } from '../domain/profiles';
+import type { Generation } from '../useGeneration';
 
 export interface LatencyMarks {
   t0?: number;
@@ -16,6 +17,7 @@ export interface LatencyMarks {
 }
 
 interface ReviewPanelProps {
+  experience: Generation['experience'];
   open: boolean;
   onClose: () => void;
   mode: 'example' | 'real';
@@ -54,7 +56,7 @@ function LatencyBar({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="w-28 shrink-0 text-[11px] text-muted-foreground">
+      <span className="w-28 shrink-0 text-[17px] text-muted-foreground">
         {label}
       </span>
       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
@@ -66,7 +68,7 @@ function LatencyBar({
           />
         )}
       </div>
-      <span className="w-14 shrink-0 text-right font-mono text-[11px] text-foreground">
+      <span className="w-14 shrink-0 text-right font-mono text-[17px] text-foreground">
         {ms === null ? '—' : `${ms}ms`}
       </span>
     </div>
@@ -98,7 +100,7 @@ export function ReviewPanel(props: ReviewPanelProps) {
             role="dialog"
             aria-modal="true"
             aria-label="评审设置"
-            className="absolute right-0 top-0 z-50 flex h-full w-full max-w-[460px] flex-col border-l border-border bg-popover"
+            className="absolute right-0 top-0 z-50 flex h-full w-full max-w-[620px] flex-col border-l border-border bg-popover"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -106,10 +108,10 @@ export function ReviewPanel(props: ReviewPanelProps) {
           >
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div>
-                <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                <div className="text-[17px] font-mono uppercase tracking-wider text-muted-foreground">
                   Review
                 </div>
-                <div className="text-[15px] text-foreground">评审信息</div>
+                <div className="text-[23px] text-foreground">评审信息</div>
               </div>
               <button
                 aria-label="关闭评审设置"
@@ -121,6 +123,59 @@ export function ReviewPanel(props: ReviewPanelProps) {
             </div>
 
             <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
+              <section className="space-y-3">
+                <SectionTitle>主动建议 · 本地规则演示</SectionTitle>
+                <p className="text-[19px] leading-relaxed text-muted-foreground">
+                  先回应，再检查能否改善、是否合适、是否值得。示例按钮会重置为独立情境；连续输入共享本次额度。
+                </p>
+                <div className="flex gap-2">
+                  <Toggle
+                    active={props.experience.attention.quiet}
+                    onClick={() =>
+                      props.experience.setQuiet(
+                        !props.experience.attention.quiet,
+                      )
+                    }
+                  >
+                    安静模式
+                  </Toggle>
+                  <Toggle
+                    active={props.experience.attention.highLoad}
+                    onClick={() =>
+                      props.experience.setHighLoad(
+                        !props.experience.attention.highLoad,
+                      )
+                    }
+                  >
+                    高驾驶负荷
+                  </Toggle>
+                </div>
+                <div className="flex items-center justify-between text-[19px] text-muted-foreground">
+                  <span>
+                    本次已询问 {props.experience.attention.questions} / 1
+                  </span>
+                  <button
+                    onClick={props.experience.resetAttention}
+                    className="min-h-12 text-primary"
+                  >
+                    重置额度与冷却
+                  </button>
+                </div>
+                {props.experience.route && (
+                  <div className="border-l-2 border-primary/40 pl-4 text-[20px] leading-relaxed">
+                    <p>{props.experience.route.reason}</p>
+                    {props.experience.feedback && (
+                      <p className="mt-2 text-muted-foreground">
+                        {props.experience.feedback}
+                      </p>
+                    )}
+                  </div>
+                )}
+                <p className="text-[17px] text-muted-foreground">
+                  同类拒绝冷却 7
+                  天（当前会话模拟）。未接入观测学习、跨日额度和真实车辆。
+                </p>
+              </section>
               {/* 模式与连接 */}
               <section className="space-y-3">
                 <SectionTitle>模式与连接</SectionTitle>
@@ -138,7 +193,7 @@ export function ReviewPanel(props: ReviewPanelProps) {
                     真实 AI
                   </Toggle>
                 </div>
-                <div className="flex items-center gap-2 text-[12px]">
+                <div className="flex items-center gap-2 text-[18px]">
                   <Circle
                     className={`h-2.5 w-2.5 ${
                       props.connection === 'connected'
@@ -157,13 +212,13 @@ export function ReviewPanel(props: ReviewPanelProps) {
                   </span>
                 </div>
                 {props.connectionNote && (
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-[17px] text-muted-foreground">
                     {props.connectionNote}
                   </div>
                 )}
                 {props.mode === 'real' && (
                   <label className="block">
-                    <span className="text-[11px] text-muted-foreground">
+                    <span className="text-[17px] text-muted-foreground">
                       服务端接口（密钥仅在服务端）
                     </span>
                     <input
@@ -171,7 +226,7 @@ export function ReviewPanel(props: ReviewPanelProps) {
                       readOnly
 
                       placeholder="/api/generate-scene"
-                      className="mt-1 w-full rounded-lg border border-border bg-input-background px-3 py-2 font-mono text-[12px] text-foreground outline-none focus:border-primary/50"
+                      className="mt-1 w-full rounded-lg border border-border bg-input-background px-3 py-2 font-mono text-[18px] text-foreground outline-none focus:border-primary/50"
                     />
                   </label>
                 )}
@@ -184,13 +239,13 @@ export function ReviewPanel(props: ReviewPanelProps) {
                   <button
                     disabled={props.loading}
                     onClick={props.onRefresh}
-                    className="text-[12px] text-primary"
+                    className="text-[18px] text-primary"
                   >
                     {props.loading ? '读取中…' : '刷新连接'}
                   </button>
                 </div>
                 {!props.models.length && (
-                  <p className="text-[12px] text-muted-foreground">
+                  <p className="text-[18px] text-muted-foreground">
                     暂时没有可用候选，刷新后再试。
                   </p>
                 )}
@@ -201,7 +256,7 @@ export function ReviewPanel(props: ReviewPanelProps) {
                       active={props.model === m.id}
                       onClick={() => props.onModelChange(m.id)}
                     >
-                      <span className="font-mono text-[11px]">{m.id}</span>
+                      <span className="font-mono text-[17px]">{m.id}</span>
                     </Toggle>
                   ))}
                 </div>
@@ -229,7 +284,7 @@ export function ReviewPanel(props: ReviewPanelProps) {
               {/* 档案与偏好 */}
               <section className="space-y-2">
                 <SectionTitle>演示档案</SectionTitle>
-                <div className="text-[12px] text-muted-foreground">
+                <div className="text-[18px] text-muted-foreground">
                   当前：{props.profile.name} · {props.profile.blurb}
                 </div>
                 {PROFILES.find((p) => p.id === props.profile.id)?.preferences
@@ -245,14 +300,14 @@ export function ReviewPanel(props: ReviewPanelProps) {
                           className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-1.5"
                         >
                           <span
-                            className={`text-[12px] ${removed ? 'text-muted-foreground/50 line-through' : pref.negative ? 'text-destructive/90' : 'text-foreground'}`}
+                            className={`text-[18px] ${removed ? 'text-muted-foreground/50 line-through' : pref.negative ? 'text-destructive/90' : 'text-foreground'}`}
                           >
                             {pref.negative ? '不喜欢 · ' : ''}
                             {pref.label}
                           </span>
                           <button
                             onClick={() => props.onTogglePref(pref.id)}
-                            className="font-mono text-[11px] text-muted-foreground hover:text-foreground"
+                            className="font-mono text-[17px] text-muted-foreground hover:text-foreground"
                           >
                             {removed ? '恢复' : '移除'}
                           </button>
@@ -261,7 +316,7 @@ export function ReviewPanel(props: ReviewPanelProps) {
                     })}
                   </div>
                 ) : (
-                  <div className="text-[12px] text-muted-foreground/70">
+                  <div className="text-[18px] text-muted-foreground/70">
                     无偏好
                   </div>
                 )}
@@ -270,14 +325,14 @@ export function ReviewPanel(props: ReviewPanelProps) {
               {/* 真实耗时 */}
               <section className="space-y-2">
                 <SectionTitle>真实耗时</SectionTitle>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[17px] text-muted-foreground">
                   本次结果：{props.modelUsed || '尚未生成'} · 示例不记录模型时延
                 </p>
                 <div className="space-y-2">
                   <LatencyBar label="服务端→理解句出现" ms={s1} max={3000} />
                   <LatencyBar label="理解句出现→完成" ms={s2} max={3000} />
                   <LatencyBar label="理解句完成→整体" ms={s3} max={3000} />
-                  <div className="flex justify-between border-t border-border pt-2 text-[12px]">
+                  <div className="flex justify-between border-t border-border pt-2 text-[18px]">
                     <span className="text-muted-foreground">整体完成</span>
                     <span className="font-mono text-foreground">
                       {total === null ? '—' : `${total}ms`}
@@ -289,7 +344,7 @@ export function ReviewPanel(props: ReviewPanelProps) {
               {/* 验证器裁决 */}
               <section className="space-y-2">
                 <SectionTitle>提议与能力裁决</SectionTitle>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[17px] text-muted-foreground">
                   {capabilities.length} 条能力 · {registryVersion}
                 </p>
                 {result ? (
@@ -297,7 +352,7 @@ export function ReviewPanel(props: ReviewPanelProps) {
                     {result.verdicts.map((v, i) => (
                       <div
                         key={i}
-                        className="flex items-center gap-2 rounded-lg bg-secondary/40 px-3 py-1.5 text-[12px]"
+                        className="flex items-center gap-2 rounded-lg bg-secondary/40 px-3 py-1.5 text-[18px]"
                       >
                         {v.outcome === 'kept' && (
                           <Check className="h-3 w-3 shrink-0 text-primary" />
@@ -311,7 +366,7 @@ export function ReviewPanel(props: ReviewPanelProps) {
                         <span className="font-mono text-muted-foreground">
                           {v.capability}
                         </span>
-                        <span className="text-[10px] text-primary/70">
+                        <span className="text-[16px] text-primary/70">
                           {
                             (
                               {
@@ -337,20 +392,20 @@ export function ReviewPanel(props: ReviewPanelProps) {
                           </>
                         )}
                         {v.reason && (
-                          <span className="ml-auto text-[11px] text-muted-foreground/70">
+                          <span className="ml-auto text-[17px] text-muted-foreground/70">
                             {v.reason}
                           </span>
                         )}
                       </div>
                     ))}
                     {result.verdicts.length === 0 && (
-                      <div className="text-[12px] text-muted-foreground/70">
+                      <div className="text-[18px] text-muted-foreground/70">
                         无
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="text-[12px] text-muted-foreground/70">
+                  <div className="text-[18px] text-muted-foreground/70">
                     尚无生成结果
                   </div>
                 )}
@@ -359,7 +414,7 @@ export function ReviewPanel(props: ReviewPanelProps) {
               {/* 结构化数据 */}
               <section className="space-y-2">
                 <SectionTitle>最终结构化 scene</SectionTitle>
-                <pre className="max-h-72 overflow-auto rounded-lg border border-border bg-background p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
+                <pre className="max-h-72 overflow-auto rounded-lg border border-border bg-background p-3 font-mono text-[17px] leading-relaxed text-muted-foreground">
                   {result
                     ? JSON.stringify(props.rawResult?.scene, null, 2)
                     : '—'}
@@ -375,7 +430,7 @@ export function ReviewPanel(props: ReviewPanelProps) {
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <div className="text-[11px] font-mono uppercase tracking-wider text-primary/70">
+    <div className="text-[17px] font-mono uppercase tracking-wider text-primary/70">
       {children}
     </div>
   );
@@ -393,7 +448,7 @@ function Toggle({
   return (
     <button
       onClick={onClick}
-      className={`rounded-lg border px-3 py-1.5 text-[13px] transition-colors ${
+      className={`rounded-lg border px-3 py-1.5 text-[20px] transition-colors ${
         active
           ? 'border-primary/50 bg-primary/15 text-primary'
           : 'border-border text-muted-foreground hover:text-foreground'

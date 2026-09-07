@@ -314,7 +314,7 @@ export function useSceneController(initialExample = true) {
       }
     }
   }
-  function saveCurrent() {
+  function saveCurrent(override?: { id: string; result: SceneResult }) {
     const s = stateRef.current;
     if (
       !s.result?.savable ||
@@ -324,11 +324,11 @@ export function useSceneController(initialExample = true) {
     )
       throw new Error('请先完成一个可以保存的场景');
     const item: SavedScene = {
-      id: s.activeId || crypto.randomUUID(),
+      id: override?.id || s.activeId || crypto.randomUUID(),
       input: s.heard,
       source: s.source,
       profileId: ctx.profile,
-      result: s.result,
+      result: override?.result || s.result,
       updatedAt: new Date().toISOString(),
     };
     const next = upsertSaved(s.saved, item);
@@ -337,6 +337,7 @@ export function useSceneController(initialExample = true) {
       setSaved(next);
       setActiveId(item.id);
       setIsSaved(true);
+      if (override) setResult(override.result);
       showToast('已保存到我的场景');
       return { id: item.id, name: item.result.scene.name };
     } catch {
@@ -372,6 +373,11 @@ export function useSceneController(initialExample = true) {
     setError('');
     setInput('');
     setTiming(null);
+  }
+  function openProposal(item: SavedScene) {
+    openSaved(item);
+    setActiveId(null);
+    setIsSaved(false);
   }
   function removeMemory(content: string) {
     if (!profileMemories[ctx.profile].some((m) => m.content === content))
@@ -571,6 +577,7 @@ export function useSceneController(initialExample = true) {
     run,
     saveCurrent,
     openSaved,
+    openProposal,
     removeMemory,
     restoreMemory,
     selectProfile,
