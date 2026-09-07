@@ -6,9 +6,13 @@ export function AssistantMark({ small = false }: { small?: boolean }) {
       className={'assistant-mark' + (small ? ' small' : '')}
       aria-hidden="true"
     >
-      <i />
-      <i />
-      <i />
+      <svg viewBox="0 0 64 64" fill="none">
+        <path
+          d="M30 9h4c0 13 8 21 21 21v4c-13 0-21 8-21 21h-4c0-13-8-21-21-21v-4c13 0 21-8 21-21Z"
+          fill="currentColor"
+        />
+        <circle cx="48" cy="16" r="4" fill="currentColor" />
+      </svg>
     </span>
   );
 }
@@ -53,20 +57,20 @@ export function NavigationCanvas({
       >
         <defs>
           <linearGradient id="mapGround" x2="1" y2="1">
-            <stop stopColor="#252c45" />
-            <stop offset="1" stopColor="#171e33" />
+            <stop stopColor="#181c1c" />
+            <stop offset="1" stopColor="#111415" />
           </linearGradient>
           <linearGradient id="river" x2="1" y2="1">
-            <stop stopColor="#1a2e50" />
-            <stop offset="1" stopColor="#2e4265" />
+            <stop stopColor="#111b1b" />
+            <stop offset="1" stopColor="#1a2a2b" />
           </linearGradient>
           <linearGradient id="building" x2="0.2" y2="1">
-            <stop stopColor="#3b4561" />
-            <stop offset="1" stopColor="#2a344d" />
+            <stop stopColor="#2b3030" />
+            <stop offset="1" stopColor="#212625" />
           </linearGradient>
           <linearGradient id="route" x2="1" y2="0">
-            <stop stopColor="#a9bbff" />
-            <stop offset="1" stopColor="#dfe7ff" />
+            <stop stopColor="#b0c44e" />
+            <stop offset="1" stopColor="#e0f497" />
           </linearGradient>
           <filter id="routeGlow">
             <feGaussianBlur stdDeviation="12" />
@@ -77,7 +81,7 @@ export function NavigationCanvas({
           <g transform="translate(70 155) skewY(-13) rotate(-17 750 500)">
             <g
               fill="url(#building)"
-              stroke="#536078"
+              stroke="#515950"
               strokeWidth="1"
               opacity=".68"
             >
@@ -103,13 +107,13 @@ export function NavigationCanvas({
             <path
               d="M-100 532H1780M450-200V1400M1080-100V1300"
               fill="none"
-              stroke="#1a2238"
+              stroke="#111715"
               strokeWidth="45"
             />
             <path
               d="M-100 532H1780M450-200V1400M1080-100V1300"
               fill="none"
-              stroke="#748098"
+              stroke="#687269"
               strokeOpacity=".22"
               strokeWidth="2"
             />
@@ -119,12 +123,12 @@ export function NavigationCanvas({
               width="234"
               height="183"
               rx="35"
-              fill="#294448"
-              stroke="#405c5a"
+              fill="#273d30"
+              stroke="#435b42"
             />
             <path
               d="M508 420Q550 285 680 310M505 340L680 400"
-              stroke="#64837b"
+              stroke="#627b54"
               fill="none"
               opacity=".5"
               strokeWidth="3"
@@ -133,7 +137,7 @@ export function NavigationCanvas({
           <path
             d="M1350 -150C970 130 1340 400 1100 550S1230 870 1820 1270"
             fill="none"
-            stroke="#0d172c"
+            stroke="#0c1716"
             strokeWidth="210"
           />
           <path
@@ -145,20 +149,20 @@ export function NavigationCanvas({
           <path
             d="M1350 -150C970 130 1340 400 1100 550S1230 870 1820 1270"
             fill="none"
-            stroke="#a4b9d3"
+            stroke="#8da99d"
             strokeOpacity=".15"
             strokeWidth="2"
           />
           <path
             d="M384 890L512 655Q522 633 550 623L837 535Q867 526 852 490L767 310"
-            stroke="#97aeff"
+            stroke="#b7d653"
             filter="url(#routeGlow)"
             strokeWidth="20"
             fill="none"
           />
           <path
             d="M384 890L512 655Q522 633 550 623L837 535Q867 526 852 490L767 310"
-            stroke="#465b98"
+            stroke="#53662d"
             strokeWidth="18"
             fill="none"
           />
@@ -170,7 +174,7 @@ export function NavigationCanvas({
           />
           <g
             fontFamily="Arial, Microsoft YaHei, sans-serif"
-            fill="#a8b4cc"
+            fill="#929e94"
             fontSize="21"
             letterSpacing="3"
           >
@@ -183,18 +187,18 @@ export function NavigationCanvas({
             <text x="518" y="785" transform="rotate(-28 518 785)">
               龙华中路
             </text>
-            <text x="595" y="438" fill="#92b4a6">
+            <text x="595" y="438" fill="#92aa89">
               西岸滨江绿地
             </text>
             <text
               x="1210"
               y="320"
-              fill="#7790b2"
+              fill="#658d84"
               transform="rotate(25 1210 320)"
             >
               黄 浦 江
             </text>
-            <text x="760" y="215" fill="#d9dfeb">
+            <text x="760" y="215" fill="#d1dcbb">
               西岸美术馆
             </text>
           </g>
@@ -202,8 +206,8 @@ export function NavigationCanvas({
             cx="767"
             cy="310"
             r="16"
-            fill="#dce5a7"
-            stroke="#252b38"
+            fill="#cdec52"
+            stroke="#202b1a"
             strokeWidth="6"
           />
           <g
@@ -213,12 +217,12 @@ export function NavigationCanvas({
                 : 'translate(767 347) rotate(-25)'
             }
           >
-            <circle r="48" fill="#b6c9ff" opacity=".12" />
-            <circle r="31" fill="#b6c9ff" opacity=".12" />
+            <circle r="48" fill="#cdec52" opacity=".12" />
+            <circle r="31" fill="#cdec52" opacity=".12" />
             <path
               d="M0-24L18 19 0 10-18 19Z"
-              fill="#fafcff"
-              stroke="#8ea9ff"
+              fill="#edf8d6"
+              stroke="#a4c658"
               strokeWidth="3"
             />
           </g>

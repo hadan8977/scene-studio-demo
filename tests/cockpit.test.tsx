@@ -117,6 +117,10 @@ test('cockpit application interaction journeys', async (t) => {
       assert.ok(document.querySelector('.navigation-canvas'));
       assert.equal(stored().length, 0);
       await click('收起场景卡片');
+      assert.ok(
+        document.querySelector('.floating-proposal[aria-hidden="true"][inert]'),
+      );
+      await settle();
       assert.equal(document.querySelectorAll('.proposal').length, 0);
       await click('继续查看场景提案');
       assert.match(
@@ -288,6 +292,70 @@ test('cockpit application interaction journeys', async (t) => {
         document.querySelector('.source-stamp')!.textContent!,
         /示例/,
       );
+    },
+  );
+  await t.test(
+    'profile preferences persist independently and can be restored',
+    async () => {
+      await mount();
+      await click('场景应用');
+      await click('它学会了什么');
+      assert.ok(document.querySelector('.memory-empty'));
+      await click('切换档案 周');
+      assert.equal(document.querySelectorAll('.memory-row').length, 4);
+      await click('停用偏好 主驾温度22℃');
+      assert.equal(document.querySelectorAll('.memory-row.removed').length, 1);
+      await click('用当前档案生成');
+      await settle();
+      await click('就这样保存');
+      const actions = stored()[0].result.scene.actions;
+      assert.equal(
+        actions.find((a: any) => a.primary === '主驾温度控制').secondary,
+        '24℃',
+      );
+      assert.equal(
+        actions.find((a: any) => a.primary === '氛围灯亮度').secondary,
+        '40%',
+      );
+      assert.equal(
+        actions.find((a: any) => a.primary === '自动空气净化').secondary,
+        '开启',
+      );
+      await click('切换档案 林');
+      await click('它学会了什么');
+      assert.equal(document.querySelectorAll('.memory-row.removed').length, 0);
+      await click('停用偏好 不喜欢香氛，不要开香氛');
+      await mount(false);
+      await click('场景应用');
+      await click('它学会了什么');
+      assert.ok(button('切换档案 林').getAttribute('aria-pressed') === 'true');
+      assert.equal(document.querySelectorAll('.memory-row.removed').length, 1);
+      await click('切换档案 周');
+      assert.ok(button('恢复偏好 主驾温度22℃'));
+      await click('恢复偏好 主驾温度22℃');
+      await click('用当前档案生成');
+      await settle();
+      await click('就这样保存');
+      assert.equal(
+        stored()[0].result.scene.actions.find(
+          (a: any) => a.primary === '主驾温度控制',
+        ).secondary,
+        '22℃',
+      );
+      assert.equal(stored().length, 2);
+    },
+  );
+  await t.test(
+    'reopening during the exit animation cancels dismissal',
+    async () => {
+      await mount();
+      await click('收起场景卡片');
+      assert.ok(document.querySelector('.floating-proposal.is-leaving'));
+      await click('继续查看场景提案');
+      await settle();
+      assert.equal(document.querySelectorAll('.proposal').length, 1);
+      assert.ok(!document.querySelector('.floating-proposal.is-leaving'));
+      assert.equal(stored().length, 0);
     },
   );
   await act(async () => root.unmount());

@@ -41,7 +41,10 @@ import {
   Trash2,
   Pencil,
   Search,
+  Brain,
 } from 'lucide-react';
+import { ProfileLibrary, ProfileSwitcher } from '@/components/profile-library';
+import { ProposalPresence } from '@/components/proposal-presence';
 import { useSceneController } from '@/lib/use-scene-controller';
 import {
   AssistantMark,
@@ -85,7 +88,7 @@ const tags: Record<string, string> = {
 const fmt = (n: number | null | undefined) =>
   n == null ? '—' : n.toFixed(2) + ' s';
 type Surface = 'navigation' | 'music' | 'scenes';
-type Page = 'saved' | 'discover' | 'create' | 'detail';
+type Page = 'saved' | 'discover' | 'create' | 'detail' | 'learned';
 
 function ContainedPanel({
   title,
@@ -192,8 +195,8 @@ export default function SceneStudio() {
         Math.max(
           0.2,
           Math.min(
-            (window.innerWidth - 48) / 1968,
-            (window.innerHeight - 48) / 1128,
+            (window.innerWidth - 100) / 2020,
+            (window.innerHeight - 90) / 1200,
           ),
         ),
       );
@@ -713,6 +716,30 @@ export default function SceneStudio() {
                                   )}
                                   {c.editing && <Pencil size={17} />}
                                 </button>
+                                <span
+                                  className="setting-meter"
+                                  aria-hidden="true"
+                                >
+                                  <i
+                                    style={{
+                                      width: val
+                                        ? (val[2] === '℃'
+                                            ? Math.max(
+                                                0,
+                                                Math.min(
+                                                  100,
+                                                  ((Number(val[1]) - 18) / 14) *
+                                                    100,
+                                                ),
+                                              )
+                                            : Math.max(
+                                                0,
+                                                Math.min(100, Number(val[1])),
+                                              )) + '%'
+                                        : '100%',
+                                    }}
+                                  />
+                                </span>
                                 <span className="setting-label">
                                   {labels[a.primary] || a.primary}
                                 </span>
@@ -912,7 +939,9 @@ export default function SceneStudio() {
       >
         <div
           className="device-hardware"
-          style={{ transform: `scale(${scale})` }}
+          style={{
+            transform: `scale(${scale}) translate(984px, 564px) perspective(2800px) rotateX(2deg) rotateY(-5deg) translate(-984px, -564px)`,
+          }}
         >
           <div className="hardware-highlight" />
           <div className="cockpit-screen" ref={screen}>
@@ -986,9 +1015,9 @@ export default function SceneStudio() {
                         {playing ? <Pause /> : <Play />}
                       </button>
                     </div>
-                    {showCard && (
-                      <div className="floating-proposal">{proposal}</div>
-                    )}
+                    <ProposalPresence open={showCard}>
+                      {proposal}
+                    </ProposalPresence>
                     {!popup && (
                       <button
                         className="restore-proposal"
@@ -1045,9 +1074,9 @@ export default function SceneStudio() {
                         <ArrowUpRight />
                       </button>
                     </div>
-                    {showCard && (
-                      <div className="floating-proposal">{proposal}</div>
-                    )}
+                    <ProposalPresence open={showCard}>
+                      {proposal}
+                    </ProposalPresence>
                   </div>
                 )}
                 {surface === 'scenes' && (
@@ -1056,10 +1085,15 @@ export default function SceneStudio() {
                       <div className="app-brand">
                         <AssistantMark />
                         <div>
-                          <h2>场景</h2>
+                          <h2>小塔场景</h2>
                           <span>SCENE STUDIO</span>
                         </div>
                       </div>
+                      <button className="sidebar-create" onClick={create}>
+                        <Plus size={23} />
+                        一句话新建
+                        <ArrowUpRight size={18} />
+                      </button>
                       <nav aria-label="场景应用导航">
                         <button
                           aria-current={page === 'saved' ? 'page' : undefined}
@@ -1078,42 +1112,50 @@ export default function SceneStudio() {
                           灵感场景
                         </button>
                         <button
-                          aria-current={page === 'create' ? 'page' : undefined}
-                          onClick={create}
+                          aria-current={page === 'learned' ? 'page' : undefined}
+                          onClick={() => setPage('learned')}
                         >
-                          <Plus />
-                          创建场景
+                          <Brain />
+                          它学会了什么
                         </button>
                       </nav>
                       <div className="sidebar-bottom">
-                        <div className="personal-avatar">我</div>
-                        <div>
-                          我的座舱<small>保存在当前浏览器</small>
-                        </div>
+                        <ProfileSwitcher
+                          ctx={c.ctx}
+                          onSelect={c.selectProfile}
+                          onOpen={() => setPage('learned')}
+                        />
+                        <span className="local-storage-note">
+                          只属于你的这台浏览器
+                        </span>
                       </div>
                     </aside>
                     <section className="application-body">
                       <header className="application-heading">
                         <div>
                           <span className="overline">
-                            {page === 'saved'
-                              ? 'YOUR SCENES'
-                              : page === 'discover'
-                                ? 'A LITTLE INSPIRATION'
-                                : page === 'create'
-                                  ? 'CREATE A SCENE'
-                                  : 'SCENE DETAILS'}
+                            {page === 'learned'
+                              ? 'A LITTLE MORE YOU'
+                              : page === 'saved'
+                                ? 'YOUR SCENES'
+                                : page === 'discover'
+                                  ? 'A LITTLE INSPIRATION'
+                                  : page === 'create'
+                                    ? 'CREATE A SCENE'
+                                    : 'SCENE DETAILS'}
                           </span>
                           <h1>
-                            {page === 'saved'
-                              ? '我的场景'
-                              : page === 'discover'
-                                ? '从一种感觉开始'
-                                : page === 'create'
-                                  ? '创建场景'
-                                  : c.editing
-                                    ? '编辑场景'
-                                    : '场景详情'}
+                            {page === 'learned'
+                              ? '它学会了什么'
+                              : page === 'saved'
+                                ? '我的场景'
+                                : page === 'discover'
+                                  ? '从一种感觉开始'
+                                  : page === 'create'
+                                    ? '创建场景'
+                                    : c.editing
+                                      ? '编辑场景'
+                                      : '场景详情'}
                           </h1>
                         </div>
                         {page === 'saved' ? (
@@ -1131,7 +1173,20 @@ export default function SceneStudio() {
                           </button>
                         )}
                       </header>
-                      {page === 'saved' || page === 'discover' ? (
+                      {page === 'learned' ? (
+                        <ProfileLibrary
+                          ctx={c.ctx}
+                          onSelect={c.selectProfile}
+                          onRemove={c.removeMemory}
+                          onRestore={c.restoreMemory}
+                          onTry={() => {
+                            c.discard();
+                            c.setMode('example');
+                            setPage('detail');
+                            void submit(EXAMPLES[1].input, true, 'example');
+                          }}
+                        />
+                      ) : page === 'saved' || page === 'discover' ? (
                         <>
                           <div className="library-subtitle">
                             <p>
@@ -1196,7 +1251,33 @@ export default function SceneStudio() {
                                                 : ''}
                                             </span>
                                             <h2>{s.result.scene.name}</h2>
-                                            <p>
+                                            <p className="saved-understanding">
+                                              {s.result.scene.understanding}
+                                            </p>
+                                            <div className="saved-settings">
+                                              {s.result.scene.actions
+                                                .slice(0, 3)
+                                                .map((a) => (
+                                                  <span key={a.primary}>
+                                                    {labels[a.primary] ||
+                                                      a.primary}{' '}
+                                                    <b>{a.secondary}</b>
+                                                  </span>
+                                                ))}
+                                              {s.result.scene.actions.length >
+                                                3 && (
+                                                <span>
+                                                  +
+                                                  {s.result.scene.actions
+                                                    .length - 3}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <p className="saved-metadata">
+                                              {PROFILE_LABELS[
+                                                s.profileId || 'none'
+                                              ] || '无记忆档案'}
+                                              <span> / </span>
                                               {s.result.scene.conditions.length
                                                 ? s.result.scene.conditions
                                                     .map(
@@ -1207,11 +1288,6 @@ export default function SceneStudio() {
                                                     )
                                                     .join(' · ')
                                                 : '手动选择时'}
-                                              <span> / </span>
-                                              {
-                                                s.result.scene.actions.length
-                                              }{' '}
-                                              个动作
                                             </p>
                                           </div>
                                           <ChevronRight size={26} />
@@ -1509,11 +1585,7 @@ export default function SceneStudio() {
                     <select
                       value={c.ctx.profile}
                       onChange={(e) =>
-                        c.changeContext({
-                          ...c.ctx,
-                          profile: e.target.value as ProfileId,
-                          ignoredMemories: [],
-                        })
+                        c.selectProfile(e.target.value as ProfileId)
                       }
                     >
                       {Object.entries(PROFILE_LABELS).map(([id, label]) => (

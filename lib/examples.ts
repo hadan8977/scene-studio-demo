@@ -8,9 +8,9 @@ export const EXAMPLES = [
  {id:'english',label:'Try in English',input:'Create a quiet scene for waiting in the car'},
 ];
 export function exampleScene(id:string,ctx:Context):Scene {
- const s={...emptyScene(),intent:'vague',relevance:.9};const mem=memoriesFor(ctx);const fresh=mem.some(m=>m.content.includes('22℃'));const quiet=mem.some(m=>m.content.includes('亮度20%'));
+ const s={...emptyScene(),intent:'vague',relevance:.9};const mem=memoriesFor(ctx);const fresh=mem.some(m=>m.content.includes('22℃'));const light=mem.some(m=>m.content.includes('亮度40%'))?'40%':mem.some(m=>m.content.includes('亮度20%'))?'20%':'30%';const purify=mem.some(m=>m.content.includes('空气净化'));
  if(id==='rain')return {...s,intent:'precise',name:'雨夜归途',understanding:'你说的“雨夜回家”，是让路上的这一段，更安稳一点。',conditions:[{primary:'时段',op:'==',secondary:'夜晚'},{primary:'天气',op:'==',secondary:'雨'},{primary:'位置',op:'==',secondary:'家'}],actions:[{primary:'氛围灯亮度',secondary:'30%'},{primary:'音量',secondary:'20%'},{primary:'主驾温度控制',secondary:'24℃'}]};
- if(id==='wait'||id==='english')return {...s,name:id==='english'?'Quiet moment':'等你的片刻',understanding:id==='english'?'“A quiet scene for waiting” — a little less light, a comfortable temperature.':'“等人时舒服一点”，把这段等待，留给自己。',actions:[{primary:'氛围灯亮度',secondary:fresh?'40%':quiet?'20%':'30%'},{primary:'音量',secondary:'20%'},{primary:'主驾温度控制',secondary:fresh?'22℃':'24℃'},...(fresh?[{primary:'自动空气净化',secondary:'开启'}]:[])]};
+ if(id==='wait'||id==='english')return {...s,name:id==='english'?'Quiet moment':'等你的片刻',understanding:id==='english'?'“A quiet scene for waiting” — a little less light, a comfortable temperature.':'“等人时舒服一点”，把这段等待，留给自己。',actions:[{primary:'氛围灯亮度',secondary:light},{primary:'音量',secondary:'20%'},{primary:'主驾温度控制',secondary:fresh?'22℃':'24℃'},...(purify?[{primary:'自动空气净化',secondary:'开启'}]:[])]};
  if(id==='quiet')return {...s,name:'轻一点',understanding:'“别吵醒后排”，声音留在前排，光也收一点。',actions:[{primary:'氛围灯亮度',secondary:'20%'},{primary:'声场',secondary:'前排模式'},{primary:'音量',secondary:'20%'}]};
  if(id==='boundary')return {...s,intent:'action',name:'透透气',understanding:'你想“车窗开到50%”，我会说明能做的部分和需要保留的边界。',actions:[{primary:'低速行人警报音',secondary:'关闭'},{primary:'主驾车窗',secondary:'50%'}],unsupported:['氛围灯改成蓝色']};
  return {...s,intent:'clarify',name:'再告诉我一点',understanding:'你说的“那个”，还需要一个具体对象。',clarify:'你想打开空调、灯光，还是车窗？'};

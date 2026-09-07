@@ -4,6 +4,8 @@ import { EXAMPLES, exampleScene, replay } from '@/lib/examples';
 import {
   validateScene,
   memoriesFor,
+  profileMemories,
+  type ProfileId,
   type SceneResult,
   type Context,
 } from '@/lib/scene';
@@ -14,12 +16,19 @@ import {
   type SavedScene,
 } from '@/lib/storage';
 import type { ModelOption, Timing, GenerationEvent } from '@/lib/generation';
+import {
+  PROFILE_STORAGE_KEY,
+  readProfileSettings,
+  emptyProfileSettings,
+  type ProfileSettings,
+} from '@/lib/profile-settings';
 
 const initialContext: Context = { driving: false, profile: 'none' };
 type Source = 'live' | 'example';
 type Toast = { text: string; error?: boolean };
 
 export function useSceneController() {
+  const profileSettings = useRef(emptyProfileSettings());
   const [ctx, setCtx] = useState<Context>(initialContext);
   const [result, setResult] = useState<SceneResult | null>(() =>
     validateScene(
@@ -91,6 +100,23 @@ export function useSceneController() {
     mounted.current = true;
     try {
       setSaved(readSaved(localStorage.getItem(STORAGE_KEY)));
+      const settings = readProfileSettings(
+        localStorage.getItem(PROFILE_STORAGE_KEY),
+      );
+      profileSettings.current = settings;
+      const restored = {
+        ...initialContext,
+        profile: settings.profile,
+        ignoredMemories: settings.removed[settings.profile],
+      };
+      setCtx(restored);
+      setResult(
+        validateScene(
+          exampleScene('wait', restored),
+          restored,
+          EXAMPLES[1].input,
+        ),
+      );
     } catch {
       showToast('浏览器存储不可用，保存功能暂时不可用', true);
     }
@@ -304,6 +330,7 @@ export function useSceneController() {
       id: s.activeId || crypto.randomUUID(),
       input: s.heard,
       source: s.source,
+      profileId: ctx.profile,
       result: s.result,
       updatedAt: new Date().toISOString(),
     };
@@ -341,11 +368,51 @@ export function useSceneController() {
     setTiming(null);
   }
   function removeMemory(content: string) {
-    changeContext({
-      ...ctx,
-      ignoredMemories: [...(ctx.ignoredMemories || []), content],
-    });
-    showToast('已移除此演示偏好，下次生成不再使用');
+    if (!profileMemories[ctx.profile].some((m) => m.content === content))
+      return;
+    const removed = [...new Set([...(ctx.ignoredMemories || []), content])];
+    if (
+      persistProfile({
+        ...profileSettings.current,
+        removed: { ...profileSettings.current.removed, [ctx.profile]: removed },
+      })
+    ) {
+      changeContext({ ...ctx, ignoredMemories: removed });
+      showToast('已停用这条偏好，下次生成不再使用');
+    }
+  }
+  function persistProfile(next: ProfileSettings) {
+    try {
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(next));
+      profileSettings.current = next;
+      return true;
+    } catch {
+      showToast('偏好未能保存，请检查浏览器存储空间', true);
+      return false;
+    }
+  }
+  function selectProfile(profile: ProfileId) {
+    if (profile === ctx.profile) return;
+    if (persistProfile({ ...profileSettings.current, profile })) {
+      changeContext({
+        ...ctx,
+        profile,
+        ignoredMemories: profileSettings.current.removed[profile],
+      });
+      showToast('已切换档案，下次生成会参考当前偏好');
+    }
+  }
+  function restoreMemory(content: string) {
+    const removed = (ctx.ignoredMemories || []).filter((m) => m !== content);
+    if (
+      persistProfile({
+        ...profileSettings.current,
+        removed: { ...profileSettings.current.removed, [ctx.profile]: removed },
+      })
+    ) {
+      changeContext({ ...ctx, ignoredMemories: removed });
+      showToast('已恢复这条偏好，下次生成会参考');
+    }
   }
   const actionsRef = useRef({ run, saveCurrent });
   actionsRef.current = { run, saveCurrent };
@@ -500,6 +567,8 @@ export function useSceneController() {
     saveCurrent,
     openSaved,
     removeMemory,
+    restoreMemory,
+    selectProfile,
     showToast,
     updateScene,
     deleteSaved,

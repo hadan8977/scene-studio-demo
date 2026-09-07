@@ -13,11 +13,22 @@ type Capability = { id: string; zh: string; group: string; class: string; status
 export const capabilities = registryData.capabilities as Capability[];
 export const registryVersion = registryData.version;
 export const PROFILE_LABELS: Record<ProfileId, string> = { none: '无记忆档案', quiet: '林 · 喜欢安静', fresh: '周 · 喜欢清爽' };
-const profiles: Record<ProfileId, Memory[]> = {
- none: [], quiet: [{ type:'preference',content:'等人或休息时氛围灯亮度20%，媒体音量20%，主驾温度24℃',confidence:1 },{type:'dislike',content:'不喜欢香氛，不要开香氛',confidence:1}],
- fresh: [{type:'preference',content:'等人时氛围灯亮度40%，主驾温度22℃，喜欢空气净化',confidence:1},{type:'dislike',content:'不喜欢开车窗',confidence:1}],
+export const profileMemories: Record<ProfileId, Memory[]> = {
+ none: [],
+ quiet: [
+  {type:'preference',content:'等人或休息时氛围灯亮度20%',confidence:1},
+  {type:'preference',content:'等人或休息时媒体音量20%',confidence:1},
+  {type:'preference',content:'主驾温度24℃',confidence:1},
+  {type:'dislike',content:'不喜欢香氛，不要开香氛',confidence:1},
+ ],
+ fresh: [
+  {type:'preference',content:'等人时氛围灯亮度40%',confidence:1},
+  {type:'preference',content:'主驾温度22℃',confidence:1},
+  {type:'preference',content:'喜欢自动空气净化',confidence:1},
+  {type:'dislike',content:'不喜欢开车窗',confidence:1},
+ ],
 };
-export function memoriesFor(ctx: Context): Memory[] { return (profiles[ctx.profile] || []).filter(m=>!ctx.ignoredMemories?.includes(m.content)); }
+export function memoriesFor(ctx: Context): Memory[] { return (profileMemories[ctx.profile] || []).filter(m=>!ctx.ignoredMemories?.includes(m.content)); }
 export function elementOf(primary: string): Element {
  if (/氛围灯|律动|屏幕|遮阳帘/.test(primary)) return '光';
  if (/音乐|音量|音效|声场|声浪|静音|多媒体/.test(primary)) return '声';
