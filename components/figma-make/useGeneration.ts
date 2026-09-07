@@ -72,7 +72,7 @@ export function useGeneration() {
       ? experience.submit(text, source)
       : c.run(text, false, source, experience.vehicle);
   }
-  function handleSave(choice?: 'separate' | 'update') {
+  async function handleSave(choice?: 'separate' | 'update') {
     try {
       if (!c.result) return false;
       const same = similarScene(
@@ -92,7 +92,7 @@ export function useGeneration() {
         c.showToast('合并后仍需补充信息，请分别保存', true);
         return false;
       }
-      c.saveCurrent(
+      await c.saveCurrent(
         merged && duplicate ? { id: duplicate.id, result: merged } : undefined,
       );
       experience.clearSavedIdea(c.heard);
@@ -100,7 +100,8 @@ export function useGeneration() {
       c.setEditing(false);
       setSaveVersion((v) => v + 1);
       return true;
-    } catch {
+    } catch (error) {
+      c.showToast(error instanceof Error ? error.message : '保存失败', true);
       return false;
     }
   }

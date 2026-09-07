@@ -16,6 +16,7 @@ import {
   type SavedScene,
 } from '@/lib/storage';
 import type { ModelOption, Timing, GenerationEvent } from '@/lib/generation';
+import { runtimeOperation } from '@/lib/runtime-browser';
 import {
   PROFILE_STORAGE_KEY,
   readProfileSettings,
@@ -54,6 +55,7 @@ export function useSceneController(initialExample = true) {
     [configured, setConfigured] = useState(false),
     [catalogError, setCatalogError] = useState(''),
     [catalogLoading, setCatalogLoading] = useState(true);
+  const [runtimeEnabled, setRuntimeEnabled] = useState(false);
   const [busy, setBusy] = useState(false),
     [streamText, setStreamText] = useState(''),
     [elapsed, setElapsed] = useState(0),
@@ -90,6 +92,7 @@ export function useSceneController(initialExample = true) {
         defaultModel: string;
         configured: boolean;
         error?: string;
+        provider?: string;
       };
       if (!mounted.current) return;
       setModels(data.models || []);
@@ -99,6 +102,7 @@ export function useSceneController(initialExample = true) {
           : data.defaultModel || '',
       );
       setConfigured(!!data.configured);
+      setRuntimeEnabled(data.provider === 'Part 1 Runtime');
       setCatalogError(data.error || '');
     } catch {
       if (mounted.current) setCatalogError('模型目录暂时连接不上，可稍后重试');
@@ -168,6 +172,7 @@ export function useSceneController(initialExample = true) {
       const validated = validateScene(result.scene, next, heard);
       setResult({
         ...validated,
+        runtime: result.runtime,
         decisions: [
           ...validated.decisions,
           ...result.decisions.filter(
@@ -261,6 +266,7 @@ export function useSceneController(initialExample = true) {
             model,
             context: { ...ctx, vehicle },
             currentScene: previous,
+            existingScenes: saved.filter(s => !s.profileId || s.profileId === ctx.profile).map(s => ({ id: s.id, scene: s.result.scene })),
           }),
           signal: controller.signal,
         });
@@ -334,7 +340,7 @@ export function useSceneController(initialExample = true) {
       }
     }
   }
-  function saveCurrent(override?: { id: string; result: SceneResult }) {
+  async function saveCurrent(override?: { id: string; result: SceneResult }) {
     const s = stateRef.current;
     if (
       !s.result?.savable ||
@@ -343,21 +349,25 @@ export function useSceneController(initialExample = true) {
       ctx.driving
     )
       throw new Error('请先完成一个可以保存的场景');
+    const selected = override?.result ? { ...override.result, runtime: override.result.runtime || s.result.runtime } : { ...s.result };
+    const runtimeSaved = selected.runtime || runtimeEnabled ? await runtimeOperation(selected, 'save', ctx) : undefined;
+    if (runtimeSaved) selected.runtime = { proposalId: runtimeSaved.proposal_id || '', registryRevision: runtimeSaved.registry_revision || '', valid: true, executable: selected.runtime?.executable ?? false, trace: selected.runtime?.trace || [], proposedScene: selected.scene };
     const item: SavedScene = {
-      id: override?.id || s.activeId || crypto.randomUUID(),
+      id: runtimeSaved?.scene_id || override?.id || s.activeId || crypto.randomUUID(),
       input: s.heard,
       source: s.source,
       profileId: ctx.profile,
-      result: override?.result || s.result,
+      result: selected,
       updatedAt: new Date().toISOString(),
     };
-    const next = upsertSaved(s.saved, item);
+    const replacedId = override?.id || s.activeId;
+    const next = upsertSaved(s.saved.filter(x => !replacedId || x.id !== replacedId || x.id === item.id), item);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       setSaved(next);
       setActiveId(item.id);
       setIsSaved(true);
-      if (override) setResult(override.result);
+      if (override || runtimeSaved) setResult(selected);
       showToast('已保存到我的场景');
       return { id: item.id, name: item.result.scene.name };
     } catch {
@@ -373,6 +383,7 @@ export function useSceneController(initialExample = true) {
       JSON.stringify(checked.scene) !== JSON.stringify(item.result.scene);
     setResult({
       ...checked,
+      runtime: item.result.runtime ? { ...item.result.runtime, proposalId: '' } : undefined,
       decisions: [
         ...checked.decisions,
         ...item.result.decisions.filter((d) => d.final === undefined),
@@ -603,6 +614,7 @@ export function useSceneController(initialExample = true) {
     setResult({
       ...checked,
       changed,
+      runtime: result?.runtime,
       decisions: [
         ...checked.decisions,
         ...(result?.decisions || []).filter(
@@ -626,6 +638,7 @@ export function useSceneController(initialExample = true) {
     }
   }
   return {
+    runtimeEnabled,
     ctx,
     result,
     heard,

@@ -45,6 +45,7 @@ export type GenerateInput = {
   context: Context;
   model: string;
   currentScene?: Scene;
+  existingScenes?: { id: string; scene: Scene }[];
 };
 export type Timing = {
   ttft: number | null;
@@ -113,6 +114,13 @@ export function inputFrom(body: unknown): GenerateInput {
     model: b.model,
     context: c as Context,
     currentScene: b.currentScene ? parseScene(b.currentScene) : undefined,
+    existingScenes: b.existingScenes === undefined ? [] : (() => {
+      if (!Array.isArray(b.existingScenes) || b.existingScenes.length > 60) throw new Error('已有场景列表无效');
+      return b.existingScenes.map((s: unknown) => {
+        if (!s || typeof s !== 'object' || typeof (s as { id?: unknown }).id !== 'string' || (s as { id: string }).id.length > 80) throw new Error('已有场景引用无效');
+        return { id: (s as { id: string }).id, scene: parseScene((s as { scene: unknown }).scene) };
+      });
+    })(),
   };
 }
 export function understandingFromPartial(

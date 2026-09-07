@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 import { generate, inputFrom } from '@/lib/generation';
 import { isInjection, emptyScene, validateScene } from '@/lib/scene';
+import { Part1Client, runtimeConfigured } from '@/lib/runtime-client';
 export async function POST(request: Request) {
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin)
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
     );
   }
   const key = process.env.DEEPSEEK_API_KEY;
-  if (!key)
+  if (!key && !runtimeConfigured())
     return Response.json(
       {
         error:
@@ -44,14 +45,17 @@ export async function POST(request: Request) {
           );
       };
       try {
-        if (isInjection(body.input))
+        if (runtimeConfigured())
+          await new Part1Client().generate(body, emit, lifecycle.signal);
+        else if (isInjection(body.input))
           emit({
             type: 'result',
             result: validateScene(emptyScene(), body.context, body.input),
             timing: { ttft: null, understanding: null, total: 0, attempts: 0 },
             model: '本地验证器',
           });
-        else await generate(body, key, emit, lifecycle.signal);
+        else if (key) await generate(body, key, emit, lifecycle.signal);
+        else throw new Error('生成服务未配置');
       } catch (error) {
         try {
           controller.enqueue(

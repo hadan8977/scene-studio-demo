@@ -49,6 +49,7 @@ export type SceneResult = {
   conceptual: boolean;
   memoryUsed: string[];
   changed: string[];
+  runtime?: import('./runtime-client.ts').RuntimeReference;
 };
 export type ProfileId = 'none' | 'quiet' | 'fresh';
 export type Context = {
