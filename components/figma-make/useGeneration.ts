@@ -6,13 +6,17 @@ import {
   toViewSaved,
   CORE_PROFILE,
   VIEW_PROFILE,
-  MEMORY_CONTENT,
 } from './bridge';
 import { PROFILES } from './domain/profiles';
 import type { DrivingState, SavedScene } from './domain/types';
 import { useExperience } from './useExperience';
 import { similarScene, mergeScene } from '@/lib/scene-similarity';
 import type { SavedScene as StoredScene } from '@/lib/storage';
+import {
+  preferenceLabel,
+  defaultPreferences,
+  type UserPreference,
+} from '@/lib/user-preferences';
 
 /** Figma Make's component API, connected to the existing real generation service. */
 export function useGeneration() {
@@ -30,14 +34,20 @@ export function useGeneration() {
     [c.result],
   );
   const profileId = VIEW_PROFILE[c.ctx.profile];
-  const removedPrefs = Object.keys(MEMORY_CONTENT).filter((id) =>
-    c.ctx.ignoredMemories?.includes(MEMORY_CONTENT[id]),
-  );
+  const preferenceEntries =
+    c.ctx.preferences || defaultPreferences(c.ctx.profile);
+  const removedPrefs = preferenceEntries
+    .filter((p) => p.deleted)
+    .map((p) => p.id);
   const profile = {
     ...PROFILES.find((p) => p.id === profileId)!,
-    preferences: PROFILES.find((p) => p.id === profileId)!.preferences.filter(
-      (p) => !removedPrefs.includes(p.id),
-    ),
+    preferences: preferenceEntries
+      .filter((p) => !p.deleted)
+      .map((p) => ({
+        id: p.id,
+        label: preferenceLabel(p.primary) + (p.negative ? '' : ` ${p.value}`),
+        negative: p.negative,
+      })),
   };
   const mode: 'real' | 'example' = c.mode === 'live' ? 'real' : 'example';
   const phase = c.busy
@@ -141,14 +151,14 @@ export function useGeneration() {
       c.changeContext({ ...c.ctx, driving: v === 'driving' }),
     profileId,
     profile,
+    preferenceEntries,
+    savePreference: (entry: UserPreference) => c.savePreference(entry),
+    deletePreference: (id: string) => c.deletePreference(id),
+    restorePreference: (id: string) => c.deletePreference(id, true),
     removedPrefs,
     setProfileId: (id: string) => c.selectProfile(CORE_PROFILE[id] || 'none'),
     togglePref: (id: string) => {
-      const content = MEMORY_CONTENT[id];
-      if (content) {
-        if (c.ctx.ignoredMemories?.includes(content)) c.restoreMemory(content);
-        else c.removeMemory(content);
-      }
+      c.deletePreference(id, removedPrefs.includes(id));
     },
     latency:
       c.source === 'live' && c.timing

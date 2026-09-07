@@ -6,7 +6,6 @@ import { capabilities, registryVersion } from '@/lib/scene';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Circle, ArrowRight, Check, Pencil, Ban } from 'lucide-react';
 import type { GenerationResult, DrivingState, Profile } from '../domain/types';
-import { PROFILES } from '../domain/profiles';
 import type { Generation } from '../useGeneration';
 
 export interface LatencyMarks {
@@ -287,39 +286,9 @@ export function ReviewPanel(props: ReviewPanelProps) {
                 <div className="text-[18px] text-muted-foreground">
                   当前：{props.profile.name} · {props.profile.blurb}
                 </div>
-                {PROFILES.find((p) => p.id === props.profile.id)?.preferences
-                  .length ? (
-                  <div className="space-y-1.5">
-                    {PROFILES.find(
-                      (p) => p.id === props.profile.id,
-                    )!.preferences.map((pref) => {
-                      const removed = props.removedPrefs.includes(pref.id);
-                      return (
-                        <div
-                          key={pref.id}
-                          className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-1.5"
-                        >
-                          <span
-                            className={`text-[18px] ${removed ? 'text-muted-foreground/50 line-through' : pref.negative ? 'text-destructive/90' : 'text-foreground'}`}
-                          >
-                            {pref.negative ? '不喜欢 · ' : ''}
-                            {pref.label}
-                          </span>
-                          <button
-                            onClick={() => props.onTogglePref(pref.id)}
-                            className="font-mono text-[17px] text-muted-foreground hover:text-foreground"
-                          >
-                            {removed ? '恢复' : '移除'}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-[18px] text-muted-foreground/70">
-                    无偏好
-                  </div>
-                )}
+                <p className="text-[18px] text-muted-foreground">
+                  在场景应用的「它学会了什么」中编辑偏好。
+                </p>
               </section>
 
               {/* 真实耗时 */}

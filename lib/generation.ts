@@ -1,4 +1,5 @@
 import candidateData from './data/models.json' with { type: 'json' };
+import { validPreference } from './user-preferences.ts';
 import { routeInput } from './intent-routing.ts';
 import {
   capabilities,
@@ -115,6 +116,13 @@ export function inputFrom(body: unknown): GenerateInput {
   )
     throw new Error('请输入1–1200字的场景描述');
   const c = b.context as Record<string, unknown>;
+  if (
+    c?.preferences !== undefined &&
+    (!Array.isArray(c.preferences) ||
+      c.preferences.length > 24 ||
+      !c.preferences.every(validPreference))
+  )
+    throw new Error('偏好格式无效');
   if (
     !c ||
     typeof c.driving !== 'boolean' ||

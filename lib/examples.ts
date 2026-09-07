@@ -2,7 +2,7 @@ import {
   emptyScene,
   type Scene,
   type Context,
-  memoriesFor,
+  waitingActions,
   validateScene,
   mergeEdit,
   type SceneResult,
@@ -37,14 +37,6 @@ export const EXAMPLES = [
 ];
 export function exampleScene(id: string, ctx: Context): Scene {
   const s = { ...emptyScene(), intent: 'vague', relevance: 0.9 };
-  const mem = memoriesFor(ctx);
-  const fresh = mem.some((m) => m.content.includes('22℃'));
-  const light = mem.some((m) => m.content.includes('亮度40%'))
-    ? '40%'
-    : mem.some((m) => m.content.includes('亮度20%'))
-      ? '20%'
-      : '30%';
-  const purify = mem.some((m) => m.content.includes('空气净化'));
   if (id === 'rain')
     return {
       ...s,
@@ -70,12 +62,7 @@ export function exampleScene(id: string, ctx: Context): Scene {
         id === 'english'
           ? '“A quiet scene for waiting” — a little less light, a comfortable temperature.'
           : '“等人时舒服一点”，把这段等待，留给自己。',
-      actions: [
-        { primary: '氛围灯亮度', secondary: light },
-        { primary: '音量', secondary: '20%' },
-        { primary: '主驾温度控制', secondary: fresh ? '22℃' : '24℃' },
-        ...(purify ? [{ primary: '自动空气净化', secondary: '开启' }] : []),
-      ],
+      actions: waitingActions(ctx),
     };
   if (id === 'quiet')
     return {

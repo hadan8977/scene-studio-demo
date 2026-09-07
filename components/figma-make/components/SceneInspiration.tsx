@@ -3,7 +3,9 @@ import { ArrowUpRight, Sparkles, Clock3 } from 'lucide-react';
 import { DEMO_CASES } from '@/lib/demo-cases';
 import { capabilities } from '@/lib/scene';
 
-const cases = DEMO_CASES.filter((c) => c.entry === 'create');
+const cases = DEMO_CASES.filter(
+  (c) => c.entry === 'create' && c.category !== '不支持的请求',
+);
 const categories = ['全部', ...new Set(cases.map((c) => c.category))];
 export function SceneInspiration({
   onTry,
@@ -20,18 +22,12 @@ export function SceneInspiration({
     <section aria-label="场景灵感" className="mt-8">
       <div className="flex items-end justify-between">
         <div>
-          <span className="font-mono text-[17px] tracking-[.2em] text-primary/70">
-            MOMENTS, MADE YOURS
-          </span>
-          <h2 className="mt-2 text-[32px]">不止一种舒服的方式</h2>
+          <h2 className="mt-2 text-[32px]">场景模板</h2>
         </div>
         <span className="text-[19px] text-muted-foreground">
-          {cases.length} 个组合 · 示例提案
+          {cases.length} 个模板
         </span>
       </div>
-      <p className="mt-2 text-[22px] text-muted-foreground">
-        从一个时刻开始，再把它改成你的。规划与提议能力会在方案中注明。
-      </p>
       <div className="my-5 flex flex-wrap gap-2" aria-label="场景灵感分类">
         {categories.map((cat) => (
           <button
@@ -70,17 +66,20 @@ export function SceneInspiration({
               <h3 className="mt-5 text-[30px]">{c.title}</h3>
               <p className="mt-2 text-[22px] text-foreground/80">“{c.input}”</p>
               <p className="mt-3 text-[20px] leading-relaxed text-muted-foreground">
-                {c.summary}
+                {c.actions
+                  ?.slice(0, 4)
+                  .map(([p]) => p.replace('控制', ''))
+                  .join(' · ') || '灯光 · 音量 · 温度'}
               </p>
               <div className="mt-5 flex items-center justify-between border-t border-border/60 pt-4 text-[18px] text-primary">
                 <span>
-                  看看提案{' '}
+                  创建场景{' '}
                   <ArrowUpRight className="inline h-5 w-5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                 </span>
                 {conceptual && (
                   <span className="flex items-center gap-1 text-muted-foreground">
                     <Clock3 className="h-4 w-4" />
-                    含未落地能力
+                    含规划功能
                   </span>
                 )}
               </div>

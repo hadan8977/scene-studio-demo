@@ -110,6 +110,18 @@ async function mount(clear = true) {
   root = createRoot(document.getElementById('root')!);
   await act(async () => root.render(<SceneStudio />));
 }
+async function select(label: string, value: string) {
+  const el = visible(`select[aria-label="${label}"]`)[0] as HTMLSelectElement;
+  assert.ok(el, label);
+  assert.ok(
+    [...el.options].some((o) => o.value === value),
+    label + ' allows ' + value,
+  );
+  await act(async () => {
+    el.value = value;
+    el.dispatchEvent(new win.Event('change', { bubbles: true }));
+  });
+}
 const stored = () =>
   JSON.parse(localStorage.getItem('scene-studio.saved.v1') || '[]');
 
@@ -141,14 +153,14 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       assert.match(card().textContent!, /等你的片刻/);
       assert.ok(
         visible('[data-testid="service-popup"]')[0].classList.contains(
-          'w-[700px]',
+          'w-[580px]',
         ),
       );
       assert.equal(stored().length, 0);
-      await click('收起场景卡片');
+      await click('关闭场景卡片');
       await settle();
       assert.equal(visible('[data-testid="service-popup"]').length, 0);
-      await click('继续查看小塔的回应');
+      await generate();
       await settle();
       assert.equal(visible('[aria-label="场景生成卡片"]').length, 1);
     },
@@ -162,11 +174,11 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await click('场景应用');
       await settle();
       assert.equal(visible('[role="dialog"][aria-label="场景编辑"]').length, 1);
-      await click('改一下');
+      await click('编辑');
       await type('修改当前场景', '灯再暗一点');
       await click('提交修改');
       await settle();
-      await click('就这样保存');
+      await click('保存');
       await settle();
       assert.equal(visible('[role="dialog"][aria-label="场景编辑"]').length, 0);
       assert.equal(stored().length, 1);
@@ -185,11 +197,11 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       );
       await click('打开场景 等你的片刻');
       await settle();
-      await click('改一下');
+      await click('编辑');
       await type('修改当前场景', '再凉一点');
       await click('提交修改');
       await settle();
-      await click('就这样保存');
+      await click('保存');
       await settle();
       assert.equal(stored().length, 1);
       assert.equal(
@@ -206,7 +218,7 @@ test('Figma Make foundation with the production scene controller', async (t) => 
     async () => {
       await mount();
       await generate();
-      await click('就这样保存');
+      await click('保存');
       await settle();
       await mount(false);
       await click('场景应用');
@@ -231,11 +243,11 @@ test('Figma Make foundation with the production scene controller', async (t) => 
     async () => {
       await mount();
       await click('场景应用');
-      await click('一句话新建');
+      await click('新建场景');
       await generate('做一个雨夜回家的场景');
       assert.match(card().textContent!, /雨夜归途/);
       assert.match(card().textContent!, /提议中/);
-      await click('不用');
+      await click('关闭编辑窗口');
       await settle();
       assert.equal(stored().length, 0);
       assert.equal(visible('[role="dialog"][aria-label="场景编辑"]').length, 0);
@@ -248,17 +260,17 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await mount();
       await generate('帮我把那个打开');
       assert.match(
-        visible('[data-testid="experience-panel"]')[0].textContent!,
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
         /你想打开空调/,
       );
       await click('灯光');
       await settle();
       assert.match(
-        visible('[data-testid="experience-panel"]')[0].textContent!,
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
         /氛围灯开关/,
       );
       assert.equal(card(), undefined);
-      await click('再聊一句');
+      await click('清除对话');
       await settle();
       await generate('Create a quiet scene for waiting in the car');
       assert.match(card().textContent!, /Quiet moment/);
@@ -270,7 +282,7 @@ test('Figma Make foundation with the production scene controller', async (t) => 
     async () => {
       await mount();
       await generate('做个透气场景，车窗开到50%，关闭行人警报音');
-      assert.match(card().textContent!, /禁止/);
+      assert.match(card().textContent!, /不允许/);
       assert.doesNotMatch(card().textContent!, /氛围灯改成蓝色/);
       await click('切换到行驶态');
       assert.equal(visible('[data-testid="driving-summary"] p').length, 3);
@@ -278,7 +290,7 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       assert.equal(button('发送给小塔').disabled, true);
       await click('切换到停车态');
       assert.match(card().textContent!, /20%/);
-      await click('就这样保存');
+      await click('保存');
       await settle();
       assert.deepEqual(stored()[0].result.scene.actions, [
         { primary: '主驾车窗', secondary: '20%' },
@@ -289,10 +301,8 @@ test('Figma Make foundation with the production scene controller', async (t) => 
   await t.test('direct fields edit the same checked scene', async () => {
     await mount();
     await generate();
-    await click('改一下');
-    await act(async () =>
-      visible('[data-testid="scene-fields"] summary')[0].click(),
-    );
+    await click('编辑');
+
     await type('场景名称', '周末等你');
     const select = visible(
       'select[aria-label="设置主驾温度控制"]',
@@ -302,7 +312,7 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       select.dispatchEvent(new win.Event('change', { bubbles: true }));
     });
     assert.equal(stored().length, 0);
-    await click('就这样保存');
+    await click('保存');
     await settle();
     assert.equal(stored()[0].result.scene.name, '周末等你');
     assert.equal(
@@ -321,10 +331,10 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await click('它学会了什么');
       await click('切换档案 周');
       assert.equal(visible('[data-testid="memory-row"]').length, 4);
-      await click('停用偏好 温度 22℃');
-      await click('用当前档案生成');
+      await click('删除偏好 温度');
+      await click('查看方案');
       await settle();
-      await click('就这样保存');
+      await click('保存');
       await settle();
       const actions = stored()[0].result.scene.actions;
       assert.equal(
@@ -340,16 +350,16 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await click('场景应用');
       await click('它学会了什么');
       assert.equal(button('切换档案 周').getAttribute('aria-pressed'), 'true');
-      assert.ok(button('恢复偏好 温度 22℃'));
+      assert.ok(button('恢复偏好 温度'));
       await click('切换档案 林');
       assert.equal(visible('[data-removed="true"]').length, 0);
       await click('切换档案 周');
-      await click('恢复偏好 温度 22℃');
-      await click('用当前档案生成');
+      await click('恢复偏好 温度');
+      await click('查看方案');
       await settle();
-      await click('就这样保存');
+      await click('保存');
       if (visible('[data-testid="duplicate-panel"]').length)
-        await click('更新原场景');
+        await click('更新');
       await settle();
       assert.equal(
         stored()[0].result.scene.actions.find(
@@ -383,8 +393,8 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await generate('把灯调暗、温度24度');
       assert.equal(card(), undefined);
       assert.match(
-        visible('[data-testid="experience-panel"]')[0].textContent!,
-        /车控已接手/,
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
+        /已调好/,
       );
     },
   );
@@ -400,7 +410,7 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await settle();
       assert.match(card().textContent!, /后排轻声/);
       assert.doesNotMatch(card().textContent!, /雨夜归途/);
-      await click('就这样保存');
+      await click('保存');
       await settle();
       assert.equal(stored()[0].result.scene.name, '后排轻声');
     },
@@ -420,18 +430,18 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await click('场景应用');
       await click('试用示例 等你的片刻');
       await settle();
-      assert.ok(visible('[aria-label="灯光与屏幕的动作"]').length);
+      assert.ok(visible('[aria-label="场景动作"]').length);
       assert.ok(!visible('[aria-label="空气与香氛的动作"]').length);
       await click('主动服务弹窗');
-      await click('改一下');
+      await click('编辑');
       await type('修改当前场景', '灯再暗一点');
       await click('提交修改');
       await settle();
-      assert.match(card().textContent!, /刚改了 氛围灯亮度/);
-      await click('改一下');
+      assert.match(card().textContent!, /已更新/);
+      await click('编辑');
       await click('小声一点');
       await settle();
-      await click('就这样保存');
+      await click('保存');
       await settle();
       const saved = stored()[0].result.scene.actions;
       assert.equal(
@@ -459,20 +469,20 @@ test('Figma Make foundation with the production scene controller', async (t) => 
         visible('[aria-label="偏好影响预览"]')[0].textContent!,
         /22℃/,
       );
-      await click('停用偏好 温度 22℃');
+      await click('删除偏好 温度');
       assert.ok(
         !visible('[aria-label="偏好影响预览"]')[0].textContent!.includes('22℃'),
       );
-      await click('切换档案 无档案');
+      await click('切换档案 默认');
       await click('主动服务弹窗');
       await generate('做个透气场景，车窗开到50%，关闭行人警报音');
-      await click('就这样保存');
+      await click('保存');
       await settle();
       await click('主动服务弹窗');
       await click('切换到行驶态');
       await click('场景应用');
       await settle();
-      await click('收起编辑窗口');
+      await click('关闭编辑窗口');
       await click('打开场景 安全限制也会保留');
       await settle();
       assert.match(
@@ -490,16 +500,17 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await click('切换档案 周');
       await click('体验 还要等一会儿');
       assert.match(
-        visible('[data-testid="experience-panel"]')[0].textContent!,
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
         /先歇一会儿/,
       );
       assert.equal(card(), undefined);
       await act(async () => {
         await new Promise((r) => setTimeout(r, 1200));
       });
-      assert.ok(button('好，试一下'));
+      assert.ok(button('查看方案'));
       assert.equal(card(), undefined);
-      await click('好，试一下');
+      await click('查看方案');
+      await click('好');
       assert.match(
         visible('[data-testid="vehicle-state"]')[0].textContent!,
         /40%/,
@@ -522,9 +533,7 @@ test('Figma Make foundation with the production scene controller', async (t) => 
           .length,
         1,
       );
-      await click('查看并保存');
-      assert.ok(card());
-      await click('就这样保存');
+      await click('保存');
       await settle();
       assert.equal(stored().length, 1);
       assert.equal(
@@ -543,7 +552,8 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await act(async () => {
         await new Promise((r) => setTimeout(r, 1200));
       });
-      await click('好，试一下');
+      await click('查看方案');
+      await click('好');
       await type('描述你想要的场景', '温度26度');
       await click('发送给小塔');
       await act(async () => {
@@ -554,7 +564,7 @@ test('Figma Make foundation with the production scene controller', async (t) => 
         /26℃/,
       );
       assert.doesNotMatch(
-        visible('[data-testid="experience-panel"]')[0].textContent!,
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
         /本次已应用/,
       );
       assert.equal(card(), undefined);
@@ -574,19 +584,20 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await act(async () => {
         await new Promise((r) => setTimeout(r, 1200));
       });
-      await click('这次不用');
+      await click('关闭场景卡片');
+      await settle();
       await generate('她说还要二十分钟');
       assert.match(
-        visible('[data-testid="experience-panel"]')[0].textContent!,
-        /冷却期/,
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
+        /先歇一会儿/,
       );
       assert.equal(card(), undefined);
-      await click('再聊一句');
+      await click('清除对话');
       await click('体验 后排睡着了');
       await act(async () => {
         await new Promise((r) => setTimeout(r, 1200));
       });
-      assert.ok(button('好，试一下'));
+      assert.ok(button('查看方案'));
     },
   );
   await t.test(
@@ -598,8 +609,8 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await settle();
       assert.equal(card(), undefined);
       assert.match(
-        visible('[data-testid="experience-panel"]')[0].textContent!,
-        /它的想法/,
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
+        /停车后查看/,
       );
       assert.equal(
         JSON.parse(localStorage.getItem('scene-studio.ideas.v1') || '[]')
@@ -608,7 +619,7 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       );
       await mount(false);
       await click('场景应用');
-      await click('它的想法');
+      await click('场景建议');
       assert.match(
         visible('[data-testid="ideas-inbox"]')[0].textContent!,
         /后排睡着了/,
@@ -616,7 +627,7 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await click('打开场景 后排睡着了');
       await settle();
       assert.ok(card());
-      await click('不用');
+      await click('关闭编辑窗口');
       await settle();
       assert.equal(stored().length, 0);
     },
@@ -626,28 +637,28 @@ test('Figma Make foundation with the production scene controller', async (t) => 
     async () => {
       await mount();
       await generate();
-      await click('就这样保存');
+      await click('保存');
       await settle();
       await click('主动服务弹窗');
-      await click('新建另一个');
+      await click('清除对话');
       await settle();
       await click('体验 还要等一会儿');
       await settle();
       assert.match(
-        visible('[data-testid="experience-panel"]')[0].textContent!,
-        /你存过的/,
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
+        /先歇一会儿/,
       );
       await click('查看方案');
-      await click('改一下');
+      await click('编辑');
       await click('灯再暗一点');
       await settle();
-      await click('就这样保存');
+      await click('保存');
       assert.match(
         visible('[data-testid="duplicate-panel"]')[0].textContent!,
         /30%.*20%/,
       );
       assert.equal(stored().length, 1);
-      await click('更新原场景');
+      await click('更新');
       await settle();
       assert.equal(stored().length, 1);
       assert.equal(
@@ -666,7 +677,12 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await click('试用示例 这一首歌');
       await settle();
       assert.match(card().textContent!, /规划中/);
-      await click('应用一次 · 演示');
+      await click('保存');
+      await settle();
+      await click('打开场景 ' + stored()[0].result.scene.name);
+      await settle();
+      await click('好');
+      await click('主动服务弹窗');
       await act(async () => {
         await new Promise((r) => setTimeout(r, 3300));
       });
@@ -675,14 +691,14 @@ test('Figma Make foundation with the production scene controller', async (t) => 
         /Here Comes the Sun/,
       );
       assert.match(
-        visible('[data-testid="experience-panel"]')[0].textContent!,
-        /规划.*提议项未应用/,
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
+        /已调好，可用功能已应用/,
       );
-      assert.equal(stored().length, 0);
-      await click('还原本次应用');
+      assert.equal(stored().length, 1);
+      await click('撤销');
       assert.match(
-        visible('[data-testid="experience-panel"]')[0].textContent!,
-        /已还原/,
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
+        /已撤销/,
       );
     },
   );
@@ -695,7 +711,7 @@ test('Figma Make foundation with the production scene controller', async (t) => 
         visible('[data-testid="hmi-frame"]')[0].style.transform,
         /rotateY\(0deg\)/,
       );
-      await click('这些不该生成场景');
+      await click('车控与回应');
       await click('体验 直接调灯与温度');
       assert.match(
         visible('[data-testid="vehicle-state"]')[0].textContent!,
@@ -703,11 +719,11 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       );
       assert.equal(card(), undefined);
       assert.equal(stored().length, 0);
-      await click('再聊一句');
+      await click('清除对话');
       await generate('今天心情很不好');
       assert.equal(card(), undefined);
       assert.match(
-        visible('[data-testid="experience-panel"]')[0].textContent!,
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
         /想说的时候/,
       );
     },
@@ -722,8 +738,8 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await settle();
       await generate('她说还要二十分钟');
       assert.match(
-        visible('[data-testid="experience-panel"]')[0].textContent!,
-        /安静模式/,
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
+        /先歇一会儿/,
       );
       assert.equal(card(), undefined);
       await generate('做一个雨夜回家的场景');
@@ -737,18 +753,22 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       await click('场景应用');
       await click('试用示例 先清爽，再安静');
       await settle();
-      assert.match(card().textContent!, /按顺序应用/);
-      await click('应用一次 · 演示');
+      assert.match(card().textContent!, /延时/);
+      await click('保存');
+      await settle();
+      await click('打开场景 ' + stored()[0].result.scene.name);
+      await settle();
+      await click('好');
       await act(async () => {
         await new Promise((r) => setTimeout(r, 3400));
       });
       assert.match(
         visible('[data-testid="vehicle-state"]')[0].textContent!,
-        /自动空气净化开启/,
+        /净化.*开启/,
       );
       assert.match(
         visible('[data-testid="vehicle-state"]')[0].textContent!,
-        /音量30%/,
+        /音量.*30%/,
         'the delayed volume must not be in the initial preview',
       );
       await click('主动服务弹窗');
@@ -766,6 +786,151 @@ test('Figma Make foundation with the production scene controller', async (t) => 
           .length,
         0,
         'cancelled timeline cannot enqueue an applied idea',
+      );
+    },
+  );
+  await t.test(
+    'compact proposal keeps speech outside and removes teaching copy without hiding actions',
+    async () => {
+      await mount();
+      await click('体验 还要等一会儿');
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 1200));
+      });
+      assert.ok(button('查看方案'));
+      const popup = visible('[data-testid="service-popup"]')[0];
+      assert.equal(popup.querySelector('[data-testid="voice-feedback"]'), null);
+      await click('查看方案');
+      assert.ok(button('好'));
+      assert.equal(card().querySelector('[class*="overflow-y-auto"]'), null);
+      assert.match(card().textContent!, /温度.*24℃/);
+      assert.doesNotMatch(
+        card().textContent!,
+        /交互演示|建议，你说了算|先试|自动保存|她说还要|先歇一会儿/,
+      );
+      assert.match(
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
+        /先歇一会儿/,
+      );
+      assert.equal(stored().length, 0);
+    },
+  );
+  await t.test(
+    'inline preference editing persists, changes recommendations and stays isolated by profile',
+    async () => {
+      await mount();
+      await click('场景应用');
+      await click('它学会了什么');
+      await click('切换档案 周');
+      await select('偏好值 温度', '25℃');
+      assert.match(
+        visible('[aria-label="偏好影响预览"]')[0].textContent!,
+        /25℃/,
+      );
+      await click('切换档案 林');
+      assert.equal(
+        (visible('select[aria-label="偏好值 温度"]')[0] as HTMLSelectElement)
+          .value,
+        '24℃',
+      );
+      await mount(false);
+      await click('场景应用');
+      await click('它学会了什么');
+      await click('切换档案 周');
+      assert.equal(
+        (visible('select[aria-label="偏好值 温度"]')[0] as HTMLSelectElement)
+          .value,
+        '25℃',
+      );
+      await click('查看方案');
+      await settle();
+      await click('保存');
+      await settle();
+      assert.equal(
+        stored()[0].result.scene.actions.find(
+          (a: any) => a.primary === '主驾温度控制',
+        ).secondary,
+        '25℃',
+      );
+      await click('它学会了什么');
+      await select('偏好值 温度', '26℃');
+      assert.equal(
+        stored()[0].result.scene.actions.find(
+          (a: any) => a.primary === '主驾温度控制',
+        ).secondary,
+        '25℃',
+      );
+    },
+  );
+  await t.test(
+    'preference creation, cancel, deletion and restoration are real persistent operations',
+    async () => {
+      await mount();
+      await click('场景应用');
+      await click('它学会了什么');
+      await click('添加偏好');
+      await select('编辑偏好值', '25℃');
+      await click('保存偏好');
+      assert.equal(visible('[data-testid="memory-row"]').length, 1);
+      await click('编辑偏好 温度');
+      await select('编辑偏好值', '20℃');
+      await click('关闭偏好编辑');
+      assert.equal(
+        (visible('select[aria-label="偏好值 温度"]')[0] as HTMLSelectElement)
+          .value,
+        '25℃',
+      );
+      await click('添加偏好');
+      await select('偏好项目', '主驾座椅通风');
+      await select('编辑偏好值', '2挡');
+      await click('保存偏好');
+      await click('删除偏好 温度');
+      assert.equal(visible('select[aria-label="偏好值 温度"]').length, 0);
+      await mount(false);
+      await click('场景应用');
+      await click('它学会了什么');
+      await act(async () =>
+        visible('[aria-label="偏好管理"] details summary')[0].click(),
+      );
+      await click('恢复偏好 温度');
+      assert.equal(
+        (visible('select[aria-label="偏好值 温度"]')[0] as HTMLSelectElement)
+          .value,
+        '25℃',
+      );
+      assert.equal(visible('[data-testid="memory-row"]').length, 2);
+      await click('查看方案');
+      await settle();
+      assert.match(card().textContent!, /通风.*2挡/);
+    },
+  );
+  await t.test(
+    'suggestions have usable templates and manual creation can build a scene from empty',
+    async () => {
+      await mount();
+      await click('场景应用');
+      await click('场景建议');
+      assert.ok(button('查看模板 等你的片刻'));
+      await click('查看模板 等你的片刻');
+      await settle();
+      await click('编辑');
+      await type('场景名称', '周末等候');
+      await select('设置主驾温度控制', '25℃');
+      await click('保存');
+      await settle();
+      assert.equal(stored()[0].result.scene.name, '周末等候');
+      await click('新建场景');
+      await click('手动创建');
+      await type('场景名称', '午后阅读');
+      await select('添加动作', '主驾温度控制');
+      await select('设置主驾温度控制', '23℃');
+      await click('保存');
+      await settle();
+      assert.equal(stored().length, 2);
+      assert.deepEqual(
+        stored().find((s: any) => s.result.scene.name === '午后阅读').result
+          .scene.actions,
+        [{ primary: '主驾温度控制', secondary: '23℃' }],
       );
     },
   );

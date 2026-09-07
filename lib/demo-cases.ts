@@ -1,4 +1,9 @@
-import { emptyScene, memoriesFor, type Context, type Scene } from './scene.ts';
+import {
+  emptyScene,
+  waitingActions,
+  type Context,
+  type Scene,
+} from './scene.ts';
 export type DemoCase = {
   id: string;
   title: string;
@@ -579,14 +584,10 @@ export function demoCase(id: string) {
 export function sceneForCase(id: string, ctx: Context, input?: string): Scene {
   const c = demoCase(id);
   if (!c) throw new Error('未知示例');
-  const memories = memoriesFor(ctx),
-    has = (s: string) => memories.some((m) => m.content.includes(s));
-  const waiting: [string, string][] = [
-    ['氛围灯亮度', has('亮度40%') ? '40%' : has('亮度20%') ? '20%' : '30%'],
-    ['音量', '20%'],
-    ['主驾温度控制', has('22℃') ? '22℃' : '24℃'],
-    ...(has('空气净化') ? [['自动空气净化', '开启'] as [string, string]] : []),
-  ];
+  const waiting: [string, string][] = waitingActions(ctx).map((a) => [
+    a.primary,
+    a.secondary,
+  ]);
   const en = /^[\x20-\x7E\s]*$/.test(input || c.input);
   const feeling: Record<string, string> = {
     wait: '把这段等待，留给自己',

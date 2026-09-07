@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { EXAMPLES, exampleScene, replay } from '@/lib/examples';
 import {
   validateScene,
+  emptyScene,
   profileMemories,
   type ProfileId,
   type SceneResult,
@@ -21,6 +22,11 @@ import {
   emptyProfileSettings,
   type ProfileSettings,
 } from '@/lib/profile-settings';
+import {
+  validPreference,
+  readPreferences,
+  type UserPreference,
+} from '@/lib/user-preferences';
 
 const initialContext: Context = { driving: false, profile: 'none' };
 type Source = 'live' | 'example';
@@ -109,6 +115,7 @@ export function useSceneController(initialExample = true) {
         ...initialContext,
         profile: settings.profile,
         ignoredMemories: settings.removed[settings.profile],
+        preferences: settings.entries[settings.profile],
       };
       setCtx(restored);
       setResult(
@@ -181,6 +188,22 @@ export function useSceneController(initialExample = true) {
     setTiming(null);
     setWhy(false);
     inp.current?.focus();
+  }
+  function startManual() {
+    if (ctx.driving) {
+      showToast('停车后创建场景');
+      return;
+    }
+    discard();
+    setResult(
+      validateScene(
+        { ...emptyScene(), name: '新场景', intent: 'precise' },
+        ctx,
+      ),
+    );
+    setEditing(true);
+    setSource('example');
+    setModelUsed('手动创建');
   }
   async function run(
     text = input,
@@ -410,6 +433,7 @@ export function useSceneController(initialExample = true) {
         ...ctx,
         profile,
         ignoredMemories: profileSettings.current.removed[profile],
+        preferences: profileSettings.current.entries[profile],
       });
       showToast('已切换档案，下次生成会参考当前偏好');
     }
@@ -425,6 +449,73 @@ export function useSceneController(initialExample = true) {
       changeContext({ ...ctx, ignoredMemories: removed });
       showToast('已恢复这条偏好，下次生成会参考');
     }
+  }
+  function savePreference(entry: UserPreference) {
+    if (ctx.driving) {
+      showToast('停车后修改偏好');
+      return false;
+    }
+    if (!validPreference(entry)) {
+      showToast('请检查偏好取值', true);
+      return false;
+    }
+    const current = profileSettings.current.entries[ctx.profile];
+    const duplicate = current.find(
+      (p) =>
+        p.primary === entry.primary &&
+        entry.primary !== '备注' &&
+        !p.deleted &&
+        p.id !== entry.id,
+    );
+    const id = duplicate?.id || entry.id;
+    const kept = current.filter((p) => p.id !== id && p.id !== entry.id);
+    while (kept.length >= 24 && kept.some((p) => p.deleted)) {
+      kept.splice(
+        kept.findIndex((p) => p.deleted),
+        1,
+      );
+    }
+    const next = readPreferences([...kept, { ...entry, id, deleted: false }]);
+    if (next.length > 24 || !next.some((p) => p.id === id)) {
+      showToast('最多保存24条偏好', true);
+      return false;
+    }
+    const settings = {
+      ...profileSettings.current,
+      entries: { ...profileSettings.current.entries, [ctx.profile]: next },
+      removed: { ...profileSettings.current.removed, [ctx.profile]: [] },
+    };
+    if (!persistProfile(settings)) return false;
+    changeContext({ ...ctx, preferences: next, ignoredMemories: [] });
+    showToast('偏好已保存');
+    return true;
+  }
+  function deletePreference(id: string, restore = false) {
+    if (ctx.driving) {
+      showToast('停车后修改偏好');
+      return false;
+    }
+    const current = profileSettings.current.entries[ctx.profile];
+    const target = current.find((p) => p.id === id);
+    if (!target) return false;
+    const next = current.map((p) => ({
+      ...p,
+      deleted:
+        p.id === id
+          ? !restore
+          : restore && target.primary !== '备注' && p.primary === target.primary
+            ? true
+            : p.deleted,
+    }));
+    const settings = {
+      ...profileSettings.current,
+      entries: { ...profileSettings.current.entries, [ctx.profile]: next },
+      removed: { ...profileSettings.current.removed, [ctx.profile]: [] },
+    };
+    if (!persistProfile(settings)) return false;
+    changeContext({ ...ctx, preferences: next, ignoredMemories: [] });
+    showToast(restore ? '偏好已恢复' : '偏好已删除');
+    return true;
   }
   const actionsRef = useRef({ run, saveCurrent });
   actionsRef.current = { run, saveCurrent };
@@ -574,6 +665,7 @@ export function useSceneController(initialExample = true) {
     cancel,
     changeContext,
     discard,
+    startManual,
     run,
     saveCurrent,
     openSaved,
@@ -581,6 +673,8 @@ export function useSceneController(initialExample = true) {
     removeMemory,
     restoreMemory,
     selectProfile,
+    savePreference,
+    deletePreference,
     showToast,
     updateScene,
     deleteSaved,

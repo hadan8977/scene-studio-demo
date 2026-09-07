@@ -6,8 +6,8 @@ import type { Profile } from './types';
 export const PROFILES: Profile[] = [
   {
     id: 'none',
-    name: '无档案',
-    blurb: '仅根据本次需求生成，不假装了解你',
+    name: '默认',
+    blurb: '个人偏好',
     preferences: [],
   },
   {

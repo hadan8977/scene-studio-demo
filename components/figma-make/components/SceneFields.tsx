@@ -87,11 +87,12 @@ export function SceneFields({ gen }: { gen: Generation }) {
   const update = gen.controller.updateScene;
   return (
     <details
+      open
       className="rounded-xl border border-primary/20 bg-secondary/30 p-3 text-[20px]"
       data-testid="scene-fields"
     >
       <summary className="flex cursor-pointer items-center justify-between text-primary">
-        调整名称、条件和动作
+        名称、条件与动作
         <ChevronDown className="h-4 w-4" />
       </summary>
       <label className="mt-4 block text-[18px] text-muted-foreground">

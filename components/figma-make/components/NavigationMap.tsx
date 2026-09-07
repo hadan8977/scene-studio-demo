@@ -24,10 +24,7 @@ export function NavigationMap() {
           徐汇滨江
         </div>
         <div className="mt-1 flex items-center gap-2 text-[22px] text-muted-foreground">
-          <span className="h-0.5 w-5 rounded bg-primary" /> 龙腾大道 · 路线演示
-        </div>
-        <div className="mt-4 border-t border-white/[0.06] pt-3 text-[17px] text-muted-foreground/70">
-          静态地图 · 车辆位置为模拟
+          <span className="h-0.5 w-5 rounded bg-primary" /> 龙腾大道
         </div>
       </div>
       <div

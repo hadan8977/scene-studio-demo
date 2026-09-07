@@ -21,27 +21,19 @@ import { toViewSaved } from '../bridge';
 import { Composer } from './Composer';
 import { SceneInspiration } from './SceneInspiration';
 import { PreferencePreview } from './PreferencePreview';
+import { PreferenceManager } from './PreferenceManager';
+import { DEMO_CASES } from '@/lib/demo-cases';
 import { PROFILES } from '../domain/profiles';
 import type { Generation } from '../useGeneration';
 import type { SavedScene } from '../domain/types';
 
 const NAV = [
   { id: 'scenes', label: '我的场景', icon: LayoutGrid },
-  { id: 'ideas', label: '它的想法', icon: Lightbulb },
+  { id: 'ideas', label: '场景建议', icon: Lightbulb },
   { id: 'learned', label: '它学会了什么', icon: Brain },
 ] as const;
 
 const CHIPS = EXAMPLES.slice(0, 3).map((x) => x.input);
-
-function SourceBadge({ source }: { source: 'example' | 'ai' }) {
-  return (
-    <span
-      className={`rounded-md px-2 py-0.5 font-mono text-[16px] uppercase tracking-wider ${source === 'ai' ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'}`}
-    >
-      {source === 'ai' ? '真实 AI' : '示例'}
-    </span>
-  );
-}
 
 function SceneTile({
   s,
@@ -86,19 +78,15 @@ function SceneTile({
         className="flex flex-1 flex-col items-start text-left"
       >
         <div className="flex items-center gap-2">
-          <SourceBadge source={s.source} />
           {concept && (
             <span className="text-[16px] text-muted-foreground">
-              含概念能力
+              含规划功能
             </span>
           )}
         </div>
         <div className="mt-3 text-[28px] tracking-tight text-foreground">
           {s.scene.name}
         </div>
-        <p className="mt-1 line-clamp-2 text-[20px] leading-relaxed text-muted-foreground">
-          {s.scene.understanding}
-        </p>
         <div className="mt-4 flex flex-wrap gap-1.5">
           {s.scene.actions.slice(0, 4).map((a) => (
             <span
@@ -173,7 +161,6 @@ export function ManagerSurface({
     gen.openSaved(s);
     setModal(true);
   };
-  const closeModal = () => setModal(false);
   const tryExample = (text: string) => {
     if (gen.driving === 'driving') return;
     setModal(true);
@@ -183,11 +170,8 @@ export function ManagerSurface({
     gen.reset();
     setModal(false);
   };
-  useOverlayFocus(active && modal, dialog, closeModal);
+  useOverlayFocus(active && modal, dialog, discard);
   useOverlayFocus(active && !!deleteId, deleteDialog, () => setDeleteId(null));
-
-  const activeProfile =
-    PROFILES.find((p) => p.id === gen.profileId) ?? PROFILES[0];
 
   return (
     <div
@@ -214,7 +198,7 @@ export function ManagerSurface({
           onClick={openCreate}
           className="mt-8 flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-[23px] text-primary-foreground transition-opacity hover:opacity-90"
         >
-          <Plus className="h-5 w-5" /> 一句话新建
+          <Plus className="h-5 w-5" /> 新建场景
         </button>
 
         <nav aria-label="场景应用导航" className="mt-8 space-y-1">
@@ -239,7 +223,7 @@ export function ManagerSurface({
         <div className="mt-auto space-y-3">
           <div className="rounded-2xl border border-border bg-background/60 p-3.5">
             <div className="font-mono text-[16px] uppercase tracking-wider text-muted-foreground">
-              当前档案 · 演示
+              当前档案
             </div>
             <div className="mt-2 flex gap-1">
               {PROFILES.map((p) => (
@@ -260,7 +244,7 @@ export function ManagerSurface({
             onClick={onReview}
             className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-[22px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
           >
-            <SlidersHorizontal className="h-[18px] w-[18px]" /> 评审 / 设置
+            <SlidersHorizontal className="h-[18px] w-[18px]" /> 设置
           </button>
         </div>
       </aside>
@@ -273,18 +257,18 @@ export function ManagerSurface({
               {tab === 'scenes'
                 ? '我的场景'
                 : tab === 'ideas'
-                  ? '它的想法'
+                  ? '场景建议'
                   : '它学会了什么'}
             </h1>
-            <p className="mt-0.5 text-[22px] text-muted-foreground">
-              {tab === 'scenes'
-                ? '保存的都在这儿，随时重开继续改。保存不代表已执行。'
-                : tab === 'ideas'
-                  ? '刚才没展开的安排，和试过还没保存的时刻。由你决定留下哪一个。'
-                  : '预置演示档案，还未接入自动学习。拿走或恢复偏好，会影响后续生成。'}
-            </p>
           </div>
           <div className="flex items-center gap-4 font-mono text-[18px] text-muted-foreground/60">
+            <span className="rounded-full border border-border px-3 py-1.5 text-[17px] text-muted-foreground">
+              {gen.mode === 'example'
+                ? '示例模式'
+                : gen.configured
+                  ? 'AI 已连接'
+                  : 'AI 未连接'}
+            </span>
             <span>22:14</span>
             <Wifi className="h-3.5 w-3.5" />
             <BatteryMedium className="h-4 w-4" />
@@ -308,13 +292,11 @@ export function ManagerSurface({
               ) : (
                 <div className="rounded-3xl border border-border bg-card p-10">
                   <Lightbulb className="h-10 w-10 text-primary/70" />
-                  <h2 className="mt-5 text-[30px]">先留白，等一个合适的时刻</h2>
+                  <h2 className="mt-5 text-[30px]">没有待处理的建议</h2>
                   <p className="mt-3 max-w-3xl text-[24px] leading-relaxed text-muted-foreground">
-                    在导航里聊起眼前的处境。值得安排、但行驶中不方便展开的建议，会留在这里。试用后，也可以回来决定是否保存。
+                    有合适的安排时，会为你保留。
                   </p>
-                  <p className="mt-5 text-[19px] text-muted-foreground">
-                    保存在当前浏览器 · 演示数据
-                  </p>
+                  <p className="mt-5 text-[19px] text-muted-foreground"></p>
                 </div>
               )}
             </div>
@@ -329,7 +311,7 @@ export function ManagerSurface({
                       onClick={() => setModal(true)}
                       className="rounded-xl border border-primary/20 px-3 py-2 text-[20px] text-primary"
                     >
-                      继续编辑草稿
+                      继续编辑
                     </button>
                   )}
                 </div>
@@ -362,16 +344,13 @@ export function ManagerSurface({
                   <Sparkles className="h-6 w-6 text-primary" />
                 </div>
                 <div className="mt-5 text-[26px] text-foreground">
-                  你的车内时刻，从一句话开始
+                  还没有保存的场景
                 </div>
-                <p className="mt-1.5 max-w-xl text-[23px] text-muted-foreground">
-                  说一句你想要的车内感觉，小塔先给你一个提案，你决定要不要留下。
-                </p>
                 <button
                   onClick={openCreate}
                   className="mt-6 flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-[23px] text-primary-foreground"
                 >
-                  <Plus className="h-5 w-5" /> 一句话新建
+                  <Plus className="h-5 w-5" /> 新建场景
                 </button>
               </div>
             ) : (
@@ -386,7 +365,7 @@ export function ManagerSurface({
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary">
                     <Plus className="h-6 w-6" />
                   </div>
-                  <span className="text-[22px]">一句话新建</span>
+                  <span className="text-[22px]">新建场景</span>
                 </button>
                 <AnimatePresence>
                   {gen.scenes
@@ -409,6 +388,36 @@ export function ManagerSurface({
               </div>
             ))}
 
+          {tab === 'ideas' && (
+            <div className="mt-8">
+              <h2 className="mb-4 text-[26px]">可用模板</h2>
+              <div className="grid grid-cols-3 gap-4">
+                {['wait', 'reading', 'dust'].map((id) => {
+                  const c = DEMO_CASES.find((c) => c.id === id)!;
+                  return (
+                    <button
+                      key={id}
+                      aria-label={'查看模板 ' + c.title}
+                      onClick={() => tryExample(c.input)}
+                      className="rounded-3xl border border-border bg-card p-6 text-left hover:border-primary/40"
+                    >
+                      <Lightbulb className="h-6 w-6 text-primary" />
+                      <h3 className="mt-4 text-[26px]">{c.title}</h3>
+                      <p className="mt-2 text-[19px] text-muted-foreground">
+                        {c.actions
+                          ?.slice(0, 3)
+                          .map(([p]) => p.replace('控制', ''))
+                          .join(' · ') || '灯光 · 声音 · 温度'}
+                      </p>
+                      <span className="mt-5 block text-[20px] text-primary">
+                        查看方案 →
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {tab === 'scenes' && !search && (
             <SceneInspiration
               onTry={tryExample}
@@ -416,88 +425,12 @@ export function ManagerSurface({
             />
           )}
           {tab === 'learned' && (
-            <div className="grid grid-cols-[minmax(0,1fr)_420px] gap-8">
-              <div>
-                <div className="mb-6 flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-[22px] border border-primary/25 bg-primary/10 text-[36px] text-primary">
-                    {activeProfile.id === 'none' ? (
-                      <Brain className="h-7 w-7" />
-                    ) : (
-                      activeProfile.name
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-[32px] tracking-tight">
-                      {activeProfile.id === 'none'
-                        ? '先从认识你开始'
-                        : activeProfile.name + '的用车偏好'}
-                    </div>
-                    <p className="mt-1 text-[20px] text-muted-foreground">
-                      {gen.profile.preferences.length} 条启用 ·{' '}
-                      {gen.removedPrefs.length} 条已拿走 · 预置演示档案
-                    </p>
-                  </div>
-                </div>
-                <div className="mb-4 flex items-center gap-2 rounded-2xl border border-border bg-card/60 px-4 py-3 text-[20px] text-muted-foreground">
-                  <Lightbulb className="h-4 w-4 shrink-0 text-primary" />
-                  当前是「{activeProfile.name}」。{activeProfile.blurb}
-                  。带「不」标记的是负面偏好，优先级更高——比如不喜欢香氛，就不会再给你加。
-                </div>
-                {activeProfile.preferences.length === 0 ? (
-                  <div className="rounded-3xl border border-border bg-card p-8 text-center text-[22px] text-muted-foreground">
-                    这个档案没有已知偏好，小塔只按你这次说的来，不假装了解你。
-                  </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    {activeProfile.preferences.map((p) => {
-                      const removed = gen.removedPrefs.includes(p.id);
-                      return (
-                        <div
-                          key={p.id}
-                          data-testid="memory-row"
-                          data-removed={removed}
-                          className={`flex items-center gap-3 rounded-2xl border px-4 py-3.5 transition-colors ${removed ? 'border-border/50 bg-card/40' : 'border-border bg-card'}`}
-                        >
-                          <div
-                            className={`flex h-9 w-9 items-center justify-center rounded-xl ${p.negative ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}
-                          >
-                            {p.negative ? (
-                              <X className="h-4 w-4" />
-                            ) : (
-                              <Brain className="h-4 w-4" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div
-                              className={`text-[23px] ${removed ? 'text-muted-foreground line-through' : 'text-foreground'}`}
-                            >
-                              {p.label}
-                              {p.negative && (
-                                <span className="ml-2 rounded-md bg-destructive/10 px-1.5 py-0.5 font-mono text-[16px] text-destructive">
-                                  不喜欢
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <button
-                            aria-label={
-                              (removed ? '恢复偏好 ' : '停用偏好 ') + p.label
-                            }
-                            onClick={() => gen.togglePref(p.id)}
-                            className={`rounded-lg px-3 py-1.5 text-[20px] transition-colors ${removed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:text-foreground'}`}
-                          >
-                            {removed ? '恢复' : '拿走'}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <p className="mt-3 text-[18px] leading-relaxed text-muted-foreground/60">
-                  偏好按档案保存在当前浏览器；已保存的场景不会自动改写。
-                </p>
-              </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-7">
+              <PreferenceManager
+                key={gen.profileId}
+                gen={gen}
+                surfaceActive={active}
+              />
               <PreferencePreview
                 gen={gen}
                 onTry={() => tryExample(EXAMPLES[1].input)}
@@ -514,7 +447,7 @@ export function ManagerSurface({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 p-8 backdrop-blur-sm"
-              onClick={closeModal}
+              onClick={discard}
             >
               <motion.div
                 ref={dialog}
@@ -526,18 +459,18 @@ export function ManagerSurface({
                 exit={{ opacity: 0, y: 24, scale: 0.97 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 onClick={(e) => e.stopPropagation()}
-                className="flex max-h-full w-[760px] flex-col overflow-hidden rounded-[28px] border border-border bg-card shadow-[0_50px_140px_-30px_rgba(0,0,0,0.9)]"
+                className="flex max-h-full w-[680px] flex-col overflow-hidden rounded-[28px] border border-border bg-card shadow-[0_50px_140px_-30px_rgba(0,0,0,0.9)]"
               >
                 <div className="flex shrink-0 items-center gap-2 border-b border-border/60 px-6 py-4">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15">
                     <Sparkles className="h-4 w-4 text-primary" />
                   </div>
                   <span className="text-[22px] text-foreground">
-                    {gen.phase === 'idle' ? '一句话新建场景' : '场景提案'}
+                    {gen.phase === 'idle' ? '新建场景' : '场景提案'}
                   </span>
                   <button
-                    aria-label="收起编辑窗口"
-                    onClick={closeModal}
+                    aria-label="关闭编辑窗口"
+                    onClick={discard}
                     className="ml-auto rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
                   >
                     <X className="h-4 w-4" />
@@ -547,15 +480,9 @@ export function ManagerSurface({
                 {gen.phase === 'idle' && !gen.experience.route ? (
                   <div className="px-7 py-8">
                     <p className="text-[23px] leading-relaxed text-muted-foreground">
-                      说说你想要什么样的车内感觉，小塔先给一句理解，再展开你能改、能存的提案。
+                      想要什么样的车内时刻？
                     </p>
-                    <p className="mt-3 text-[18px] text-primary/80">
-                      {gen.mode === 'example'
-                        ? '当前为示例回放，可试用下方原句；自由表达需连接真实 AI。'
-                        : gen.configured
-                          ? '真实 AI 已连接 · 支持中文与英文'
-                          : '真实 AI 未连接 · 请在评审设置中检查连接'}
-                    </p>
+
                     <div className="mt-6 flex items-center gap-2 rounded-2xl border border-border bg-input-background p-2">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
                         <Mic className="h-5 w-5" />
@@ -583,6 +510,15 @@ export function ManagerSurface({
                         <ArrowUp className="h-5 w-5" />
                       </button>
                     </div>
+                    <button
+                      onClick={() => {
+                        gen.controller.startManual();
+                        gen.experience.showProposal();
+                      }}
+                      className="mt-5 text-[21px] text-primary"
+                    >
+                      手动创建
+                    </button>
                     <div className="mt-4 flex flex-wrap gap-2">
                       {CHIPS.map((c) => (
                         <button

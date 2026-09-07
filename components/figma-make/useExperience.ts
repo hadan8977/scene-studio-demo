@@ -153,7 +153,7 @@ export function useExperience(c: Controller) {
     setRoute({
       kind: 'scene',
       input: item.input,
-      reason: '从它的想法打开提案',
+      reason: '从场景建议打开提案',
       reply: '',
     });
     setPresentation('proposal');
@@ -217,13 +217,10 @@ export function useExperience(c: Controller) {
       c.setInput('');
       setFeedback(
         available.length
-          ? '已完成：' +
-              available.map((a) => a.primary + ' ' + a.secondary).join(' · ') +
-              '（演示）'
+          ? '已调好。'
           : checked.conceptual
-            ? '已转交官方预设；该能力规划中，此处仅演示请求。'
-            : checked.decisions.map((d) => d.reason).join('；') ||
-              '没有执行车辆动作。',
+            ? '这项功能暂未开放。'
+            : '这项无法调整。',
       );
       return;
     }
@@ -277,7 +274,7 @@ export function useExperience(c: Controller) {
     }
     if (c.ctx.driving) {
       keepIdea(checked, input, same?.source || source || c.mode);
-      setFeedback('完整提案已留在「它的想法」，停车后查看。');
+      setFeedback('完整方案已留在「场景建议」，停车后查看。');
       return;
     }
     // The response is presented first. This delay is a demo transition, never model latency.
@@ -324,7 +321,8 @@ export function useExperience(c: Controller) {
     });
     if (!actions.length) {
       keepIdea(c.result, c.heard);
-      setFeedback('这份提案仅含未落地能力，已留在「它的想法」，本次不应用。');
+      setFeedback('这项功能暂未开放，方案已保留。');
+      c.showToast('这项功能暂未开放，方案已保留。');
       setPresentation('response');
       return;
     }
@@ -414,7 +412,8 @@ export function useExperience(c: Controller) {
     undo: () => {
       job.current++;
       stopPreview(true);
-      setFeedback('已还原本次应用；之后的手动车控保持不变。');
+      setFeedback('已撤销');
+      setPresentation('proposal');
     },
     openIdea,
     removeIdea: (id: string) => updateInbox(inbox.filter((s) => s.id !== id)),
