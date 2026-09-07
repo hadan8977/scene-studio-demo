@@ -1,11 +1,13 @@
-import { env } from 'cloudflare:workers';
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 import { generate, inputFrom } from '@/lib/generation';
 import { isInjection, emptyScene, validateScene } from '@/lib/scene';
 export async function POST(request:Request){
  const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return Response.json({error:'请求来源无效'},{status:403});
  if(Number(request.headers.get('content-length')||0)>40000)return Response.json({error:'请求过大'},{status:413});
  let body;try{const text=await request.text();if(text.length>40000)throw new Error('请求过大');body=inputFrom(JSON.parse(text));}catch{return Response.json({error:'请求格式无效，请检查输入与场景'},{status:400});}
- const key=(env as unknown as Record<string,string|undefined>).OPENROUTER_API_KEY;
+ const key=process.env.OPENROUTER_API_KEY;
  if(!key)return Response.json({error:'真实 AI 尚未连接，请在服务端配置 OPENROUTER_API_KEY。示例模式仍可使用。'},{status:503});
  const lifecycle=new AbortController();const timer=setTimeout(()=>lifecycle.abort(),30000);request.signal.addEventListener('abort',()=>lifecycle.abort(),{once:true});
  const encoder=new TextEncoder();const stream=new ReadableStream<Uint8Array>({

@@ -1,5 +1,7 @@
 # Scene Studio 场景
 
+[在线体验 Demo](https://scene-studio-demo.vercel.app)
+
 一句话生成车内场景的交互 demo。输入需求后，查看理解句、触发条件和动作；继续说一句只改对应设置，确认后保存到“我的场景”。
 
 包含独立的能力验证器、可展开的评审面板，以及可切换的示例模式和 OpenRouter 实时生成接口。没有模型密钥也可以使用示例模式；真实 AI 状态会明确标注。
@@ -95,6 +97,12 @@ npm run build
 
 车况、记忆档案和车辆动作均为演示数据。规划中与提议中的能力只做标注后的概念展示。没有真实车辆执行、自动触发调度、电话、消息发送或账号同步。
 
-基于 React 19、TypeScript、Vinext/Vite、Cloudflare Workers 兼容运行时及组件原语构建。`.openai/hosting.json` 是不含私有项目ID的中性配置；本地运行不需要注册或登录 Sites。
+基于 Next.js 16、React 19、TypeScript 与组件原语构建，支持本地 Node.js 和 Vercel 部署。
 
 接口依据：[OpenRouter Quickstart](https://openrouter.ai/docs/quickstart)、[Models API](https://openrouter.ai/docs/api/api-reference/models/get-models)。
+
+## 部署到 Vercel
+
+导入此 GitHub 仓库，框架选择 Next.js，保留默认构建设置。无需密钥即可部署并体验示例模式。
+
+如需真实 AI，在 Vercel 项目的 Environment Variables 中设置服务端变量 OPENROUTER_API_KEY，可选设置 OPENROUTER_MODEL，然后重新部署。不要加 NEXT_PUBLIC_ 前缀。生成接口仍会在30秒主动终止，平台运行时上限为60秒。
