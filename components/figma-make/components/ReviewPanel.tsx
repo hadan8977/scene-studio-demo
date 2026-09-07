@@ -2,6 +2,7 @@ import { useRef, type ReactNode } from 'react';
 import { useOverlayFocus } from './useOverlayFocus';
 import type { ModelOption } from '@/lib/generation';
 import type { SceneResult } from '@/lib/scene';
+import { capabilities, registryVersion } from '@/lib/scene';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Circle, ArrowRight, Check, Pencil, Ban } from 'lucide-react';
 import type { GenerationResult, DrivingState, Profile } from '../domain/types';
@@ -24,6 +25,7 @@ interface ReviewPanelProps {
   loading: boolean;
   rawResult: SceneResult | null;
   model: string;
+  modelUsed: string;
   onModelChange: (m: string) => void;
   driving: DrivingState;
   onDrivingChange: (d: DrivingState) => void;
@@ -268,8 +270,11 @@ export function ReviewPanel(props: ReviewPanelProps) {
               {/* 真实耗时 */}
               <section className="space-y-2">
                 <SectionTitle>真实耗时</SectionTitle>
+                <p className="text-[11px] text-muted-foreground">
+                  本次结果：{props.modelUsed || '尚未生成'} · 示例不记录模型时延
+                </p>
                 <div className="space-y-2">
-                  <LatencyBar label="输入→理解句出现" ms={s1} max={3000} />
+                  <LatencyBar label="服务端→理解句出现" ms={s1} max={3000} />
                   <LatencyBar label="理解句出现→完成" ms={s2} max={3000} />
                   <LatencyBar label="理解句完成→整体" ms={s3} max={3000} />
                   <div className="flex justify-between border-t border-border pt-2 text-[12px]">
@@ -283,7 +288,10 @@ export function ReviewPanel(props: ReviewPanelProps) {
 
               {/* 验证器裁决 */}
               <section className="space-y-2">
-                <SectionTitle>模型提议 vs 验证器裁决</SectionTitle>
+                <SectionTitle>提议与能力裁决</SectionTitle>
+                <p className="text-[11px] text-muted-foreground">
+                  {capabilities.length} 条能力 · {registryVersion}
+                </p>
                 {result ? (
                   <div className="space-y-1">
                     {result.verdicts.map((v, i) => (

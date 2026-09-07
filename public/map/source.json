@@ -1,0 +1,16 @@
+{
+  "source": "OpenStreetMap contributors",
+  "license": "https://opendatacommons.org/licenses/odbl/1-0/",
+  "copyright": "https://www.openstreetmap.org/copyright",
+  "timestamp": "2026-06-01T08:52:28Z",
+  "queryBounds": [
+    121.438,
+    31.162,
+    121.492,
+    31.202
+  ],
+  "projectedLandmark": [
+    789.0808888886168,
+    252.85197118186719
+  ]
+}

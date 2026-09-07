@@ -391,6 +391,80 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       assert.equal(stored()[0].result.scene.name, '轻一点');
     },
   );
+
+  await t.test(
+    'real map and inspiration lead into a compact proposal; normal continuation changes only one item',
+    async () => {
+      await mount();
+      assert.equal(
+        visible('[data-testid="real-map"] img')[0]?.getAttribute('src'),
+        '/map/west-bund.svg',
+      );
+      assert.ok(
+        visible('a[href="https://www.openstreetmap.org/copyright"]').length,
+      );
+      await click('场景应用');
+      await click('试用示例 等人时，舒服一点');
+      await settle();
+      assert.ok(visible('[aria-label="光的动作"]').length);
+      assert.ok(!visible('[aria-label="气的动作"]').length);
+      await click('主动服务弹窗');
+      await generate('灯再暗一点');
+      assert.match(card().textContent!, /刚改了 氛围灯亮度/);
+      await click('改一下');
+      await click('小声一点');
+      await settle();
+      await click('就这样保存');
+      await settle();
+      const saved = stored()[0].result.scene.actions;
+      assert.equal(
+        saved.find((a: any) => a.primary === '氛围灯亮度').secondary,
+        '20%',
+      );
+      assert.equal(
+        saved.find((a: any) => a.primary === '音量').secondary,
+        '10%',
+      );
+      assert.equal(
+        saved.find((a: any) => a.primary === '主驾温度控制').secondary,
+        '24℃',
+      );
+    },
+  );
+  await t.test(
+    'learning preview reacts to removal; reopening under different car state never overwrites storage',
+    async () => {
+      await mount();
+      await click('场景应用');
+      await click('切换档案 周');
+      await click('它学会了什么');
+      assert.match(
+        visible('[aria-label="偏好影响预览"]')[0].textContent!,
+        /22℃/,
+      );
+      await click('停用偏好 温度 22℃');
+      assert.ok(
+        !visible('[aria-label="偏好影响预览"]')[0].textContent!.includes('22℃'),
+      );
+      await click('切换档案 无档案');
+      await click('主动服务弹窗');
+      await generate('把氛围灯改成蓝色，关闭行人警报音，车窗开到50%');
+      await click('就这样保存');
+      await settle();
+      await click('主动服务弹窗');
+      await click('切换到行驶态');
+      await click('场景应用');
+      await settle();
+      await click('收起编辑窗口');
+      await click('打开场景 透透气');
+      await settle();
+      assert.match(
+        visible('[data-testid="driving-summary"]')[0].textContent!,
+        /20%/,
+      );
+      assert.equal(stored()[0].result.scene.actions[0].secondary, '50%');
+    },
+  );
   await act(async () => root.unmount());
   dom.window.close();
 });

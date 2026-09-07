@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from 'react';
 import { EXAMPLES, exampleScene, replay } from '@/lib/examples';
 import {
   validateScene,
-  memoriesFor,
   profileMemories,
   type ProfileId,
   type SceneResult,
@@ -159,9 +158,6 @@ export function useSceneController(initialExample = true) {
       const validated = validateScene(result.scene, next, heard);
       setResult({
         ...validated,
-        memoryUsed: result.memoryUsed.filter((m) =>
-          memoriesFor(next).some((n) => n.content === m),
-        ),
         decisions: [
           ...validated.decisions,
           ...result.decisions.filter(
@@ -350,19 +346,28 @@ export function useSceneController(initialExample = true) {
   }
   function openSaved(item: SavedScene) {
     cancel();
+    const checked = validateScene(item.result.scene, ctx, item.input);
+    const changedByContext =
+      JSON.stringify(checked.scene) !== JSON.stringify(item.result.scene);
     setResult({
-      ...validateScene(item.result.scene, ctx, item.input),
-      memoryUsed: item.result.memoryUsed,
+      ...checked,
       decisions: [
-        ...validateScene(item.result.scene, ctx, item.input).decisions,
+        ...checked.decisions,
         ...item.result.decisions.filter((d) => d.final === undefined),
       ],
     });
+    setModelUsed(
+      item.source === 'example'
+        ? '预设交互示例'
+        : '已保存的 AI 场景（无本次时延）',
+    );
     setHeard(item.input);
     setSource(item.source);
     setMode(item.source);
     setActiveId(item.id);
-    setIsSaved(true);
+    setIsSaved(!changedByContext);
+    if (changedByContext)
+      showToast('已按当前车况和偏好调整预览，原场景保留；修改后请重新保存');
     setEditing(false);
     setError('');
     setInput('');
@@ -499,11 +504,10 @@ export function useSceneController(initialExample = true) {
     changed: string[] = [],
   ) {
     if (ctx.driving || busy) return;
-    const checked = validateScene(next, ctx, heard);
+    const checked = validateScene({ ...next, clarify: null }, ctx, heard);
     setResult({
       ...checked,
       changed,
-      memoryUsed: result?.memoryUsed || [],
       decisions: [
         ...checked.decisions,
         ...(result?.decisions || []).filter(

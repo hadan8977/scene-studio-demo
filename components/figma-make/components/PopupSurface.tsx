@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Mic,
   ArrowUp,
-  Navigation2,
   Wifi,
   BatteryMedium,
   ParkingSquare,
@@ -13,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { Composer } from './Composer';
+import { NavigationMap } from './NavigationMap';
 import { PROFILES } from '../domain/profiles';
 import type { Generation } from '../useGeneration';
 
@@ -22,63 +22,6 @@ const CHIPS = [
   '做个安静场景，别吵醒后排',
   '把灯调暗、温度24度',
 ];
-
-// 背景层：另一个正在运行的应用（导航），我们的卡片浮在它上面。
-function NavBackdrop() {
-  return (
-    <div className="absolute inset-0 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_30%_35%,rgba(28,34,42,0.9),transparent),radial-gradient(50%_60%_at_85%_80%,rgba(20,24,30,0.9),transparent)] bg-[#0a0c0f]" />
-      {/* 路网 */}
-      <svg
-        className="absolute inset-0 h-full w-full opacity-[0.5]"
-        viewBox="0 0 1920 1080"
-        fill="none"
-        preserveAspectRatio="xMidYMid slice"
-      >
-        <path
-          d="M-100 720 C 400 700 620 520 900 500 C 1200 480 1400 300 1920 260"
-          stroke="rgba(205,236,82,0.55)"
-          strokeWidth="8"
-          strokeLinecap="round"
-        />
-        <path
-          d="M-100 860 C 500 840 900 900 1300 720 C 1600 585 1750 620 2020 560"
-          stroke="rgba(120,130,140,0.22)"
-          strokeWidth="4"
-        />
-        <path
-          d="M300 -50 C 340 300 560 520 620 900"
-          stroke="rgba(120,130,140,0.16)"
-          strokeWidth="4"
-        />
-        <path
-          d="M1500 -50 C 1440 260 1180 470 1120 1120"
-          stroke="rgba(120,130,140,0.16)"
-          strokeWidth="4"
-        />
-      </svg>
-      {/* 车辆点 */}
-      <div className="absolute left-[46%] top-[47%]">
-        <div className="h-4 w-4 rounded-full bg-primary shadow-[0_0_24px_6px] shadow-primary/50" />
-      </div>
-      {/* 导航卡（另一个 app 的内容）*/}
-      <div className="absolute left-10 top-24 w-[300px] rounded-2xl border border-white/[0.05] bg-black/40 p-4 backdrop-blur-md">
-        <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground/70">
-          下一步
-        </div>
-        <div className="mt-1 flex items-center gap-2 text-foreground/90">
-          <Navigation2 className="h-5 w-5 text-primary" />
-          <span className="text-[22px] tracking-tight">1.2 公里</span>
-        </div>
-        <div className="mt-0.5 text-[13px] text-muted-foreground">
-          沿滨江大道向南 · 约 18 分钟到家
-        </div>
-      </div>
-      {/* 底部落幕，让卡片区更沉 */}
-      <div className="absolute inset-x-0 bottom-0 h-[420px] bg-gradient-to-t from-black/70 to-transparent" />
-    </div>
-  );
-}
 
 function ControlCluster({
   gen,
@@ -119,7 +62,11 @@ function ControlCluster({
       <span
         className={`rounded-full px-2.5 py-1.5 text-[11px] backdrop-blur-md ${gen.mode === 'real' ? 'bg-primary/20 text-primary' : 'border border-white/10 bg-black/40 text-muted-foreground'}`}
       >
-        {gen.mode === 'real' ? '真实 AI' : '示例'}
+        {gen.mode === 'real'
+          ? gen.configured
+            ? 'AI 已连接'
+            : 'AI 未连接'
+          : '示例回放'}
       </span>
       <button
         aria-label="打开评审设置"
@@ -148,7 +95,7 @@ export function PopupSurface({
 
   return (
     <div data-testid="popup-surface" className="relative h-full w-full">
-      <NavBackdrop />
+      <NavigationMap />
 
       {/* 系统状态栏（属于系统 / 另一个 app，我们不占用）*/}
       <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-8 py-4">
@@ -239,6 +186,20 @@ export function PopupSurface({
           </div>
         )}
 
+        {gen.scene &&
+          !gen.scene.clarify &&
+          !gen.editing &&
+          gen.driving === 'parked' && (
+            <div className="mb-3 flex items-center gap-3 text-[12px] text-muted-foreground">
+              <span>继续聊，会修改当前提案</span>
+              <button
+                onClick={gen.reset}
+                className="rounded-full border border-white/10 bg-card/80 px-3 py-1.5 text-foreground/80 hover:border-primary/40"
+              >
+                新建另一个
+              </button>
+            </div>
+          )}
         {/* 命令栏（唤起小塔）*/}
         <div className="flex w-[600px] items-center gap-2 rounded-full border border-border bg-card/90 p-2 shadow-2xl shadow-black/50 backdrop-blur-xl">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -252,9 +213,13 @@ export function PopupSurface({
             disabled={gen.driving === 'driving'}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.nativeEvent.isComposing)
-                gen.submitInput();
+                void gen.submitInput();
             }}
-            placeholder="对小塔说一句，例如：做一个雨夜回家的场景…"
+            placeholder={
+              gen.scene
+                ? '继续改这张卡，例如：灯再暗一点…'
+                : '对小塔说一句，例如：做一个雨夜回家的场景…'
+            }
             className="flex-1 bg-transparent px-1 text-[15px] text-foreground outline-none placeholder:text-muted-foreground/50"
           />
           <button

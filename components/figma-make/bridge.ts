@@ -38,8 +38,23 @@ const target = (p: string) =>
   ({ 主驾温度控制: '主驾温度', 音量: '媒体音量', 氛围灯亮度: '氛围灯亮度' })[
     p
   ] || p;
+const conditionLabel = (
+  primary: string,
+  op: string | undefined,
+  value: string,
+) => {
+  if (op === '==' || !op) {
+    if (primary === '时段') return value;
+    if (primary === '天气') return value === '雨' ? '雨天' : value;
+    if (primary === '位置') return '在' + value;
+    if (primary === '生效时间') return value;
+    if (primary === '重复周期') return value;
+    return primary + ' · ' + value;
+  }
+  return `${primary} ${({ '<': '低于', '<=': '不高于', '>': '高于', '>=': '不低于' } as Record<string, string>)[op] || op} ${value}`;
+};
 
-/** Presentation adapter only: the Appendix C result and 96-entry validator remain authoritative. */
+/** Presentation adapter only: the Appendix C result and 114-entry validator remain authoritative. */
 export function toViewResult(result: SceneResult): GenerationResult {
   const raw = result.scene;
   const scene: Scene = {
@@ -64,7 +79,7 @@ export function toViewResult(result: SceneResult): GenerationResult {
         );
         return {
           id: `condition:${i}`,
-          label: `${c.primary} ${c.op || '=='} ${c.secondary}`,
+          label: conditionLabel(c.primary, c.op, c.secondary),
           status: status(d) as Scene['conditions'][number]['status'],
           reason: d?.reason,
         };

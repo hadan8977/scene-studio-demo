@@ -128,7 +128,9 @@ export function useGeneration() {
         ? {
             t0: 0,
             understandingStart:
-              c.timing.ttft == null ? undefined : c.timing.ttft * 1000,
+              c.timing.understandingStart == null
+                ? undefined
+                : c.timing.understandingStart * 1000,
             understandingDone:
               c.timing.understanding == null
                 ? undefined
@@ -145,10 +147,9 @@ export function useGeneration() {
     setEditText: c.setInput,
     clarifyText: c.input,
     setClarifyText: c.setInput,
-    submitInput: (text = c.input) =>
-      request(text, !c.editing && !c.result?.scene.clarify),
-    submitEdit: () => request(c.input, false),
-    submitClarify: () => request(c.input, false),
+    submitInput: (text = c.input) => request(text, !c.result),
+    submitEdit: (text = c.input) => request(text, false),
+    submitClarify: (text = c.input) => request(text, false),
     playExample: (text: string) => {
       c.setMode('example');
       return request(text, true, 'example');

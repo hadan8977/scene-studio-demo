@@ -12,7 +12,7 @@ function harness(responses:Response[]){let calls=0;const bodies:Record<string,un
 test('stream handles split UTF-8 and SSE chunks, reports real timings and valid scene',async()=>{
  const h=harness([modelStream(JSON.stringify(exampleScene('rain',context)))]),events:GenerationEvent[]=[];
  await generate(payload,'test-secret',e=>events.push(e),new AbortController().signal,h.fetcher);
- const result=events.find(e=>e.type==='result');assert.ok(result&&result.type==='result');assert.equal(result.result.savable,true);assert.ok(events.some(e=>e.type==='understanding'));assert.ok(result.timing.understanding!==null);assert.ok(!JSON.stringify(events).includes('test-secret'));assert.equal(h.calls,1);
+ const result=events.find(e=>e.type==='result');assert.ok(result&&result.type==='result');assert.equal(result.result.savable,true);assert.ok(events.some(e=>e.type==='understanding'));assert.ok(result.timing.understanding!==null);assert.ok(result.timing.understandingStart!=null);assert.ok(result.timing.understandingStart!>=result.timing.ttft!);assert.ok(result.timing.understanding!>=result.timing.understandingStart!);assert.ok(!JSON.stringify(events).includes('test-secret'));assert.equal(h.calls,1);
 });
 test('invalid JSON retries exactly once and surfaces retry event',async()=>{
  const h=harness([modelStream('not JSON'),modelStream(JSON.stringify(exampleScene('wait',context)))]),events:GenerationEvent[]=[];

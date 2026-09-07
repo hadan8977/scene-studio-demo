@@ -68,6 +68,7 @@ export default function App() {
           connectionNote={gen.connectionNote}
           rawResult={gen.rawResult}
           model={gen.model}
+          modelUsed={gen.controller.modelUsed}
           onModelChange={gen.setModel}
           driving={gen.driving}
           onDrivingChange={gen.setDriving}

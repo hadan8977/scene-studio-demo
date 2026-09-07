@@ -23,7 +23,11 @@ export function useOverlayFocus(
         ...dialog.querySelectorAll<HTMLElement>(
           'button:not(:disabled),input:not(:disabled),select:not(:disabled),summary',
         ),
-      ].filter((el) => !el.closest('[hidden],[inert]'));
+      ].filter(
+        (el) =>
+          !el.closest('[hidden],[inert]') &&
+          (!el.closest('details:not([open])') || el.tagName === 'SUMMARY'),
+      );
       const first = controls[0],
         last = controls.at(-1);
       if (e.shiftKey && document.activeElement === first) {

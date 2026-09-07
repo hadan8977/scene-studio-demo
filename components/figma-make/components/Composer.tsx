@@ -67,7 +67,7 @@ export function Composer({
         editing={gen.editing}
         editText={gen.editText}
         onEditText={gen.setEditText}
-        onSubmitEdit={gen.submitEdit}
+        onSubmitEdit={(text) => gen.submitEdit(text)}
         onSave={gen.handleSave}
         onEdit={() => gen.setEditing(true)}
         onDiscard={onDiscard}
@@ -135,6 +135,27 @@ export function Composer({
           <p className="mt-2 text-[20px] leading-tight tracking-tight text-foreground">
             {scene.clarify.question}
           </p>
+          {scene.conditions
+            .filter((c) => c.status === 'unsupported')
+            .map((c) => (
+              <p key={c.id} className="mt-3 text-[13px] text-destructive/90">
+                {c.label} · {c.reason}
+              </p>
+            ))}
+          {gen.mode === 'example' &&
+            scene.clarify.question === '你想打开空调、灯光，还是车窗？' && (
+              <div className="mt-5 flex gap-2">
+                {['空调', '灯光', '车窗'].map((label) => (
+                  <button
+                    key={label}
+                    onClick={() => gen.submitClarify(label)}
+                    className="min-h-11 rounded-xl border border-primary/25 bg-primary/10 px-5 text-[14px] text-primary"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           <div className="mt-6 flex w-full items-center gap-2 rounded-2xl border border-border bg-input-background p-1.5">
             <input
               value={gen.clarifyText}
@@ -143,7 +164,7 @@ export function Composer({
               maxLength={1200}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.nativeEvent.isComposing)
-                  gen.submitClarify();
+                  void gen.submitClarify();
               }}
               autoFocus
               placeholder="回答一句，继续刚才的场景…"
@@ -151,12 +172,18 @@ export function Composer({
             />
             <button
               disabled={!gen.clarifyText.trim()}
-              onClick={gen.submitClarify}
+              onClick={() => gen.submitClarify()}
               className="flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-[13px] text-primary-foreground"
             >
               <CornerDownLeft className="h-3.5 w-3.5" /> 继续
             </button>
           </div>
+          <button
+            onClick={onDiscard}
+            className="mt-4 px-4 py-2 text-[13px] text-muted-foreground"
+          >
+            不用
+          </button>
         </div>
       )}
 
@@ -199,6 +226,14 @@ export function Composer({
                 </div>
               )}
               <div className="mt-3 flex gap-2">
+                {gen.scene && (
+                  <button
+                    onClick={() => gen.controller.setError('')}
+                    className="rounded-lg border border-border px-3 py-2 text-[13px] text-foreground"
+                  >
+                    返回当前提案
+                  </button>
+                )}
                 {error.canRetry && (
                   <button
                     onClick={gen.retry}

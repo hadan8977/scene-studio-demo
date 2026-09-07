@@ -5,8 +5,8 @@ import { exampleScene, replay, EXAMPLES } from '../lib/examples.ts';
 import { readSaved, upsertSaved, type SavedScene } from '../lib/storage.ts';
 const ctx:Context={driving:false,profile:'none'};
 const action=(primary:string,secondary:string)=>({primary,secondary});
-test('registry is the supplied 96-entry source, brightness uses 10% increments',()=>{
- assert.equal(capabilities.length,96);assert.deepEqual(capabilities.find(c=>c.zh==='氛围灯亮度')?.act_values,['10%','20%','30%','40%','50%','60%','70%','80%','90%','100%']);
+test('registry is the supplied 114-entry source, brightness uses 10% increments',()=>{
+ assert.equal(capabilities.length,114);assert.deepEqual(capabilities.find(c=>c.zh==='氛围灯亮度')?.act_values,['10%','20%','30%','40%','50%','60%','70%','80%','90%','100%']);
 });
 test('Chinese and English examples validate, actual model generation not claimed',()=>{
  for(const id of ['rain','wait','quiet','english'])assert.equal(validateScene(exampleScene(id,ctx),ctx).savable,true);

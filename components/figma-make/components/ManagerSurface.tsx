@@ -19,6 +19,8 @@ import {
 import { useOverlayFocus } from './useOverlayFocus';
 import { EXAMPLES } from '@/lib/examples';
 import { Composer } from './Composer';
+import { SceneInspiration } from './SceneInspiration';
+import { PreferencePreview } from './PreferencePreview';
 import { PROFILES } from '../domain/profiles';
 import type { Generation } from '../useGeneration';
 import type { SavedScene } from '../domain/types';
@@ -49,7 +51,18 @@ function SceneTile({
   onOpen: () => void;
   onRemove: () => void;
 }) {
-  const cond = s.scene.conditions?.[0]?.label ?? '手动使用';
+  const cond = s.scene.conditions.length
+    ? s.scene.conditions
+        .map((c) => c.label)
+        .join(s.scene.logic === 'AND' ? ' · ' : ' / ')
+    : '手动使用';
+  const concept =
+    s.scene.conditions.some(
+      (c) => c.status === 'planned' || c.status === 'proposed',
+    ) ||
+    s.scene.actions.some(
+      (a) => a.status === 'planned' || a.status === 'proposed',
+    );
   const profileName =
     PROFILES.find((p) => p.id === s.profileId)?.name ?? '无档案';
   return (
@@ -71,7 +84,14 @@ function SceneTile({
         onClick={onOpen}
         className="flex flex-1 flex-col items-start text-left"
       >
-        <SourceBadge source={s.source} />
+        <div className="flex items-center gap-2">
+          <SourceBadge source={s.source} />
+          {concept && (
+            <span className="text-[10px] text-muted-foreground">
+              含概念能力
+            </span>
+          )}
+        </div>
         <div className="mt-3 text-[20px] tracking-tight text-foreground">
           {s.scene.name}
         </div>
@@ -84,7 +104,7 @@ function SceneTile({
               key={a.id}
               className="rounded-lg bg-secondary/70 px-2 py-1 font-mono text-[11px] text-foreground/80"
             >
-              {a.target}
+              {a.target} {a.finalValue}
             </span>
           ))}
           {s.scene.actions.length > 4 && (
@@ -94,10 +114,10 @@ function SceneTile({
           )}
         </div>
         <div className="mt-4 flex w-full items-center justify-between border-t border-border/60 pt-3 text-[12px] text-muted-foreground">
-          <span className="truncate">
+          <span className="line-clamp-2" title={cond}>
             {cond} · {profileName}
           </span>
-          <span className="flex items-center gap-1 text-primary opacity-0 transition-opacity group-hover:opacity-100">
+          <span className="flex items-center gap-1 shrink-0 text-primary">
             打开 <ChevronRight className="h-3.5 w-3.5" />
           </span>
         </div>
@@ -144,6 +164,11 @@ export function ManagerSurface({
     setModal(true);
   };
   const closeModal = () => setModal(false);
+  const tryExample = (text: string) => {
+    if (gen.driving === 'driving') return;
+    setModal(true);
+    void gen.playExample(text);
+  };
   const discard = () => {
     gen.reset();
     setModal(false);
@@ -289,14 +314,14 @@ export function ManagerSurface({
             )}
           {tab === 'scenes' &&
             (gen.scenes.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary">
-                  <LayoutGrid className="h-7 w-7 text-muted-foreground" />
+              <div className="flex flex-col items-start rounded-3xl border border-border/60 bg-[radial-gradient(ellipse_at_100%_0%,rgba(205,236,82,0.065),transparent_65%)] p-8 text-left">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+                  <Sparkles className="h-6 w-6 text-primary" />
                 </div>
                 <div className="mt-5 text-[18px] text-foreground">
-                  还没有保存的场景
+                  你的车内时刻，从一句话开始
                 </div>
-                <p className="mt-1.5 max-w-xs text-[14px] text-muted-foreground">
+                <p className="mt-1.5 max-w-xl text-[15px] text-muted-foreground">
                   说一句你想要的车内感觉，小塔先给你一个提案，你决定要不要留下。
                 </p>
                 <button
@@ -341,76 +366,99 @@ export function ManagerSurface({
               </div>
             ))}
 
+          {tab === 'scenes' && !search && (
+            <SceneInspiration
+              onTry={tryExample}
+              disabled={gen.driving === 'driving'}
+            />
+          )}
           {tab === 'learned' && (
-            <div className="max-w-2xl">
-              <div className="mb-4 flex items-center gap-2 rounded-2xl border border-border bg-card/60 px-4 py-3 text-[13px] text-muted-foreground">
-                <Lightbulb className="h-4 w-4 shrink-0 text-primary" />
-                当前是「{activeProfile.name}」。{activeProfile.blurb}
-                。带「不」标记的是负面偏好，优先级更高——比如不喜欢香氛，就不会再给你加。
-              </div>
-              {activeProfile.preferences.length === 0 ? (
-                <div className="rounded-3xl border border-border bg-card p-8 text-center text-[14px] text-muted-foreground">
-                  这个档案没有已知偏好，小塔只按你这次说的来，不假装了解你。
+            <div className="grid grid-cols-[minmax(0,1fr)_340px] gap-8">
+              <div>
+                <div className="mb-6 flex items-center gap-4">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-[22px] border border-primary/25 bg-primary/10 text-[26px] text-primary">
+                    {activeProfile.id === 'none' ? (
+                      <Brain className="h-7 w-7" />
+                    ) : (
+                      activeProfile.name
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[23px] tracking-tight">
+                      {activeProfile.id === 'none'
+                        ? '先从认识你开始'
+                        : activeProfile.name + '的用车偏好'}
+                    </div>
+                    <p className="mt-1 text-[13px] text-muted-foreground">
+                      {gen.profile.preferences.length} 条启用 ·{' '}
+                      {gen.removedPrefs.length} 条已拿走 · 预置演示档案
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {activeProfile.preferences.map((p) => {
-                    const removed = gen.removedPrefs.includes(p.id);
-                    return (
-                      <div
-                        key={p.id}
-                        data-testid="memory-row"
-                        data-removed={removed}
-                        className={`flex items-center gap-3 rounded-2xl border px-4 py-3.5 transition-colors ${removed ? 'border-border/50 bg-card/40' : 'border-border bg-card'}`}
-                      >
+                <div className="mb-4 flex items-center gap-2 rounded-2xl border border-border bg-card/60 px-4 py-3 text-[13px] text-muted-foreground">
+                  <Lightbulb className="h-4 w-4 shrink-0 text-primary" />
+                  当前是「{activeProfile.name}」。{activeProfile.blurb}
+                  。带「不」标记的是负面偏好，优先级更高——比如不喜欢香氛，就不会再给你加。
+                </div>
+                {activeProfile.preferences.length === 0 ? (
+                  <div className="rounded-3xl border border-border bg-card p-8 text-center text-[14px] text-muted-foreground">
+                    这个档案没有已知偏好，小塔只按你这次说的来，不假装了解你。
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {activeProfile.preferences.map((p) => {
+                      const removed = gen.removedPrefs.includes(p.id);
+                      return (
                         <div
-                          className={`flex h-9 w-9 items-center justify-center rounded-xl ${p.negative ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}
+                          key={p.id}
+                          data-testid="memory-row"
+                          data-removed={removed}
+                          className={`flex items-center gap-3 rounded-2xl border px-4 py-3.5 transition-colors ${removed ? 'border-border/50 bg-card/40' : 'border-border bg-card'}`}
                         >
-                          {p.negative ? (
-                            <X className="h-4 w-4" />
-                          ) : (
-                            <Brain className="h-4 w-4" />
-                          )}
-                        </div>
-                        <div className="flex-1">
                           <div
-                            className={`text-[15px] ${removed ? 'text-muted-foreground line-through' : 'text-foreground'}`}
+                            className={`flex h-9 w-9 items-center justify-center rounded-xl ${p.negative ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}
                           >
-                            {p.label}
-                            {p.negative && (
-                              <span className="ml-2 rounded-md bg-destructive/10 px-1.5 py-0.5 font-mono text-[10px] text-destructive">
-                                不喜欢
-                              </span>
+                            {p.negative ? (
+                              <X className="h-4 w-4" />
+                            ) : (
+                              <Brain className="h-4 w-4" />
                             )}
                           </div>
+                          <div className="flex-1">
+                            <div
+                              className={`text-[15px] ${removed ? 'text-muted-foreground line-through' : 'text-foreground'}`}
+                            >
+                              {p.label}
+                              {p.negative && (
+                                <span className="ml-2 rounded-md bg-destructive/10 px-1.5 py-0.5 font-mono text-[10px] text-destructive">
+                                  不喜欢
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            aria-label={
+                              (removed ? '恢复偏好 ' : '停用偏好 ') + p.label
+                            }
+                            onClick={() => gen.togglePref(p.id)}
+                            className={`rounded-lg px-3 py-1.5 text-[13px] transition-colors ${removed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:text-foreground'}`}
+                          >
+                            {removed ? '恢复' : '拿走'}
+                          </button>
                         </div>
-                        <button
-                          aria-label={
-                            (removed ? '恢复偏好 ' : '停用偏好 ') + p.label
-                          }
-                          onClick={() => gen.togglePref(p.id)}
-                          className={`rounded-lg px-3 py-1.5 text-[13px] transition-colors ${removed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:text-foreground'}`}
-                        >
-                          {removed ? '恢复' : '拿走'}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <button
-                disabled={gen.driving === 'driving'}
-                onClick={() => {
-                  setModal(true);
-                  void gen.playExample(EXAMPLES[1].input);
-                }}
-                className="mt-5 rounded-xl border border-primary/30 px-4 py-2 text-[13px] text-primary disabled:opacity-40"
-              >
-                用当前档案生成
-              </button>
-              <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground/60">
-                偏好按档案保存在当前浏览器；已保存的场景不会自动改写。
-              </p>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground/60">
+                  偏好按档案保存在当前浏览器；已保存的场景不会自动改写。
+                </p>
+              </div>
+              <PreferencePreview
+                gen={gen}
+                onTry={() => tryExample(EXAMPLES[1].input)}
+              />
             </div>
           )}
         </div>
@@ -456,7 +504,14 @@ export function ManagerSurface({
                 {gen.phase === 'idle' ? (
                   <div className="px-7 py-8">
                     <p className="text-[15px] leading-relaxed text-muted-foreground">
-                      说说你想要什么样的车内感觉，中英文都行。小塔先给一句理解，再展开一个你能改、能存的提案。
+                      说说你想要什么样的车内感觉，小塔先给一句理解，再展开你能改、能存的提案。
+                    </p>
+                    <p className="mt-3 text-[12px] text-primary/80">
+                      {gen.mode === 'example'
+                        ? '当前为示例回放，可试用下方原句；自由表达需连接真实 AI。'
+                        : gen.configured
+                          ? '真实 AI 已连接 · 支持中文与英文'
+                          : '真实 AI 未连接 · 请在评审设置中检查连接'}
                     </p>
                     <div className="mt-6 flex items-center gap-2 rounded-2xl border border-border bg-input-background p-2">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
@@ -468,7 +523,7 @@ export function ManagerSurface({
                         onChange={(e) => gen.setInput(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.nativeEvent.isComposing)
-                            gen.submitInput();
+                            void gen.submitInput();
                         }}
                         aria-label="描述你想要的场景"
                         maxLength={1200}

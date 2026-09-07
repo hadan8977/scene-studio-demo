@@ -1,8 +1,17 @@
 import { ChevronDown, Plus, X } from 'lucide-react';
+import { useState } from 'react';
 import { capabilities } from '@/lib/scene';
+import {
+  structuredFields,
+  validStructuredValue,
+} from '@/lib/structured-values';
 import type { Generation } from '../useGeneration';
 
 function values(primary: string, condition: boolean) {
+  if (structuredFields[primary])
+    return structuredFields[primary].example
+      ? [structuredFields[primary].example!]
+      : [];
   const cap = capabilities.find((c) => c.zh === primary);
   const spec = condition ? cap?.cond_values : cap?.act_values;
   if (!spec) return [];
@@ -22,10 +31,57 @@ function values(primary: string, condition: boolean) {
           (_, i) =>
             `${Number(spec.range[0]) + i * Number(spec.range[2])}${spec.range[3]}`,
         )
-  ).filter((v) => condition || !cap?.deny_act_values.includes(v));
+  ).filter(
+    (v) =>
+      (condition || !cap?.deny_act_values.includes(v)) &&
+      ![
+        '自定义',
+        '自定义动效',
+        '地点搜索',
+        '收藏地点',
+        '常用地点',
+        '指定歌曲',
+      ].includes(v),
+  );
+}
+
+function CustomValue({
+  primary,
+  value,
+  onApply,
+}: {
+  primary: string;
+  value: string;
+  onApply: (value: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  const valid = validStructuredValue(primary, draft.trim()) === true;
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <input
+        aria-label={'设置' + primary}
+        value={draft}
+        maxLength={80}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder={structuredFields[primary].hint}
+        className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-2 text-[12px] text-foreground"
+      />
+      <button
+        disabled={!valid || draft === value}
+        onClick={() => onApply(draft.trim())}
+        className="rounded-lg px-2 py-2 text-[12px] text-primary disabled:opacity-30"
+      >
+        应用
+      </button>
+    </div>
+  );
 }
 
 export function SceneFields({ gen }: { gen: Generation }) {
+  const [pending, setPending] = useState<{
+    primary: string;
+    kind: 'actions' | 'conditions';
+  } | null>(null);
   const scene = gen.rawResult?.scene;
   if (!scene) return null;
   const update = gen.controller.updateScene;
@@ -104,26 +160,45 @@ export function SceneFields({ gen }: { gen: Generation }) {
                   ))}
                 </select>
               )}
-              <select
-                aria-label={'设置' + entry.primary}
-                value={entry.secondary}
-                onChange={(e) =>
-                  update(
-                    {
-                      ...scene,
-                      [kind]: scene[kind].map((a, j) =>
-                        j === i ? { ...a, secondary: e.target.value } : a,
-                      ),
-                    },
-                    [entry.primary],
-                  )
-                }
-                className="max-w-[150px] rounded-lg border border-border bg-background px-2 py-2 text-[12px] text-primary"
-              >
-                {values(entry.primary, kind === 'conditions').map((v) => (
-                  <option key={v}>{v}</option>
-                ))}
-              </select>
+              {structuredFields[entry.primary] ? (
+                <CustomValue
+                  key={entry.primary + entry.secondary}
+                  primary={entry.primary}
+                  value={entry.secondary}
+                  onApply={(value) =>
+                    update(
+                      {
+                        ...scene,
+                        [kind]: scene[kind].map((a, j) =>
+                          j === i ? { ...a, secondary: value } : a,
+                        ),
+                      },
+                      [entry.primary],
+                    )
+                  }
+                />
+              ) : (
+                <select
+                  aria-label={'设置' + entry.primary}
+                  value={entry.secondary}
+                  onChange={(e) =>
+                    update(
+                      {
+                        ...scene,
+                        [kind]: scene[kind].map((a, j) =>
+                          j === i ? { ...a, secondary: e.target.value } : a,
+                        ),
+                      },
+                      [entry.primary],
+                    )
+                  }
+                  className="max-w-[150px] rounded-lg border border-border bg-background px-2 py-2 text-[12px] text-primary"
+                >
+                  {values(entry.primary, kind === 'conditions').map((v) => (
+                    <option key={v}>{v}</option>
+                  ))}
+                </select>
+              )}
               <button
                 aria-label={'移除' + entry.primary}
                 onClick={() =>
@@ -145,6 +220,13 @@ export function SceneFields({ gen }: { gen: Generation }) {
               value=""
               onChange={(e) => {
                 const primary = e.target.value;
+                if (
+                  structuredFields[primary] &&
+                  !structuredFields[primary].example
+                ) {
+                  setPending({ primary, kind });
+                  return;
+                }
                 const secondary = values(primary, kind === 'conditions')[0];
                 if (secondary !== undefined)
                   update(
@@ -186,6 +268,37 @@ export function SceneFields({ gen }: { gen: Generation }) {
                 ))}
             </select>
           </div>
+          {pending?.kind === kind && (
+            <div className="rounded-lg border border-primary/20 p-3">
+              <div className="mb-2 flex items-center justify-between text-[12px] text-muted-foreground">
+                {pending.primary}
+                <button aria-label="取消添加" onClick={() => setPending(null)}>
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <CustomValue
+                primary={pending.primary}
+                value=""
+                onApply={(value) => {
+                  update(
+                    {
+                      ...scene,
+                      [kind]: [
+                        ...scene[kind],
+                        {
+                          primary: pending.primary,
+                          secondary: value,
+                          ...(kind === 'conditions' ? { op: '==' } : {}),
+                        },
+                      ],
+                    },
+                    [pending.primary],
+                  );
+                  setPending(null);
+                }}
+              />
+            </div>
+          )}
         </div>
       ))}
     </details>

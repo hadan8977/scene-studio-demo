@@ -1,3 +1,4 @@
+import { validStructuredValue } from './structured-values.ts';
 import registryData from './data/capabilities.json' with { type: 'json' };
 
 export type Element = '光' | '声' | '气' | '温' | '话' | '供' | '其他';
@@ -30,10 +31,11 @@ export const profileMemories: Record<ProfileId, Memory[]> = {
 };
 export function memoriesFor(ctx: Context): Memory[] { return (profileMemories[ctx.profile] || []).filter(m=>!ctx.ignoredMemories?.includes(m.content)); }
 export function elementOf(primary: string): Element {
- if (/氛围灯|律动|屏幕|遮阳帘/.test(primary)) return '光';
+ if (/氛围灯|律动|屏幕|遮阳帘|壁纸|主题/.test(primary)) return '光';
  if (/音乐|音量|音效|声场|声浪|静音|多媒体/.test(primary)) return '声';
  if (/香氛|循环|净化|自干燥/.test(primary)) return '气';
  if (/温度控制|空调|风量|座椅|加热|通风|出风|除雾|AC|AUTO|ECO|同步|主驾模式|升温/.test(primary)) return '温';
+ if (/视频|爱奇艺|唱吧|K歌|YouTube/.test(primary)) return '供';
  if (primary==='小塔播报') return '话';
  if (/导航|offer/.test(primary)) return '供'; return '其他';
 }
@@ -67,7 +69,7 @@ export function validateScene(raw: Scene, ctx: Context, input=''): SceneResult {
  function check(items:Entry[],kind:'action'|'condition'):Entry[]{
   const result:Entry[]=[],seen=new Set<string>();
   for(const original of items){
-   const a={...original,secondary:normalizeValue(original.secondary)};
+   const a={...original,secondary:['播放指定音乐','壁纸','主题'].includes(original.primary)?original.secondary.trim():normalizeValue(original.secondary)};
    const cap=capabilities.find(c=>c.zh===a.primary); const spec=cap?.[kind==='action'?'act_values':'cond_values'];
    if(!cap || !spec){cut(original,kind,'unsupported','当前能力表不支持');if(kind==='condition')invalidCondition=true;continue;}
    if(cap.status!=='enabled'){cut(original,kind,'unsupported','能力暂不可用');if(kind==='condition')invalidCondition=true;continue;}
@@ -77,9 +79,9 @@ export function validateScene(raw: Scene, ctx: Context, input=''): SceneResult {
    if(kind==='action' && negatives.some(m=>(m.content.includes('香氛') && a.primary.includes('香氛') && a.secondary!=='关闭') || (m.content.includes('车窗') && a.primary.includes('车窗') && a.secondary!=='关闭'))){cut(original,kind,'forbidden','遵循你的偏好：'+negatives.find(m=>a.primary.includes(m.content.includes('香氛')?'香氛':'车窗'))?.content);continue;}
    let reason='';
    if(kind==='action' && /温度控制/.test(a.primary) && /^-?\d+(?:\.\d+)?℃$/.test(a.secondary)) { const n=parseFloat(a.secondary); if(n<18 || n>32){a.secondary=Math.max(18,Math.min(32,n))+'℃';reason='温度范围为18–32℃';} }
-   if(!isValidValue(a.secondary,spec)){cut(original,kind,'unsupported','取值不在能力表允许范围内');if(kind==='condition')invalidCondition=true;continue;}
+   if(!(validStructuredValue(a.primary,a.secondary) ?? (isValidValue(a.secondary,spec) && !['自定义','自定义动效','地点搜索','收藏地点','常用地点','指定歌曲'].includes(a.secondary)))){cut(original,kind,'unsupported','取值不在能力表允许范围内');if(kind==='condition')invalidCondition=true;continue;}
    if(kind==='action' && ctx.driving){
-    if(cap.group==='门' || a.primary==='导航目的地' || a.primary==='进入情景模式'){cut(original,kind,'forbidden','行驶中不操作此项，请停车后修改');continue;}
+    if(cap.group==='门' || a.primary==='导航目的地' || a.primary==='进入情景模式' || (cap.group==='娱乐' && a.secondary!=='退出')){cut(original,kind,'forbidden','行驶中不操作此项，请停车后修改');continue;}
     if(cap.group==='车窗' && parseInt(a.secondary)>20){a.secondary='20%';reason='行驶中车窗最大开启20%';}
     if(a.primary==='氛围灯亮度' && parseInt(a.secondary)>50){a.secondary='50%';reason='行驶中氛围灯亮度不超过50%';}
     if(a.primary==='音乐律动' && a.secondary!=='关闭'){a.secondary='关闭';reason='行驶中关闭音乐律动';}
@@ -102,7 +104,10 @@ export function validateScene(raw: Scene, ctx: Context, input=''): SceneResult {
  if(/^[\x00-\x7F\s]*$/.test(scene.say)?scene.say.trim().split(/\s+/).length>8:[...scene.say].length>15){decisions.push({primary:'小塔播报',original:scene.say,kind:'other',status:'unsupported',reason:'话术过长，本次不播报'});scene.say='';}
  scene.memory=scene.memory.filter((m)=>m && ['preference','relationship','place','dislike'].includes(m.type) && typeof m.content==='string' && typeof m.confidence==='number' && m.confidence>=.7 && m.confidence<=1 && /记住|不喜欢|以后|下次|remember|prefer|dislike/i.test(input)).slice(0,3);
  if(invalidCondition){scene.clarify='有触发条件暂时无法表达，请修改条件后再保存。';}
- return {scene,decisions,savable:!scene.clarify && !invalidCondition && scene.intent!=='none' && (scene.actions.length>0 || !!scene.say),conceptual:decisions.some(d=>d.status==='planned'||d.status==='proposed'),memoryUsed:mem.filter(m=>m.type==='dislike' ? decisions.some(d=>d.reason.includes(m.content)) : scene.actions.some(a=>m.content.includes(a.primary.replace('控制','')) || (a.primary==='音量'&&m.content.includes('媒体音量')) || (a.primary==='主驾温度控制'&&m.content.includes('主驾温度')))).map(m=>m.content),changed:[]};
+ return {scene,decisions,savable:!scene.clarify && !invalidCondition && scene.intent!=='none' && (scene.actions.length>0 || !!scene.say),conceptual:decisions.some(d=>d.status==='planned'||d.status==='proposed'),memoryUsed:mem.filter(m=>m.type==='dislike' ? decisions.some(d=>d.reason.includes(m.content)) : scene.actions.some(a=>{
+   const relevant=m.content.includes(a.primary.replace('控制','')) || (a.primary==='音量'&&m.content.includes('媒体音量')) || (a.primary==='主驾温度控制'&&m.content.includes('主驾温度'));
+   return relevant && (a.primary==='自动空气净化' ? a.secondary==='开启' : m.content.includes(a.secondary));
+ })).map(m=>m.content),changed:[]};
 }
 export function mergeEdit(previous:Scene, proposed:Scene, input:string):{scene:Scene;changed:string[]} {
  if(proposed.clarify) return {scene:{...previous,clarify:proposed.clarify},changed:[]};

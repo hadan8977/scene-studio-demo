@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   CornerDownLeft,
   Quote,
+  ChevronDown,
+  Brain,
 } from 'lucide-react';
 import type { ActionGroup, Scene, Action } from '../domain/types';
 import { REGISTRY } from '../domain/capabilities';
@@ -128,7 +130,7 @@ function Row({ action, changed }: { action: Action; changed: boolean }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span
-            className={`truncate text-[14px] ${soft ? 'text-muted-foreground' : 'text-foreground'}`}
+            className={`text-[16px] ${soft ? 'text-muted-foreground' : 'text-foreground'}`}
           >
             {action.target}
           </span>
@@ -169,7 +171,7 @@ interface SceneCardProps {
   editing: boolean;
   editText: string;
   onEditText: (v: string) => void;
-  onSubmitEdit: () => void;
+  onSubmitEdit: (text?: string) => void;
   onSave: () => void;
   onEdit: () => void;
   onDiscard: () => void;
@@ -178,9 +180,15 @@ interface SceneCardProps {
 
 export function SceneCard(props: SceneCardProps) {
   const { scene, understanding, heard, changedIds, sourceBadge, saved } = props;
-  const ordered = [...scene.actions].sort(
-    (a, b) => GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group),
-  );
+  const groups = GROUP_ORDER.map((group) => ({
+    group,
+    actions: scene.actions.filter((a) => a.group === group),
+  })).filter((g) => g.actions.length);
+  const quickEdits = [
+    { capability: '氛围灯亮度', label: '灯再暗一点' },
+    { capability: '音量', label: '小声一点' },
+    { capability: '主驾温度控制', label: '凉一点' },
+  ].filter((e) => scene.actions.some((a) => a.capability === e.capability));
 
   return (
     <div
@@ -262,10 +270,36 @@ export function SceneCard(props: SceneCardProps) {
 
         {props.editing && props.editor}
         {/* 动作列表（整段是一张卡里的紧凑行，不是每项一卡） */}
-        {ordered.length > 0 && (
-          <div className="rounded-2xl border border-border/60 bg-secondary/25 p-1.5">
-            {ordered.map((a) => (
-              <Row key={a.id} action={a} changed={changedIds.has(a.id)} />
+        {changedIds.size > 0 && (
+          <div
+            role="status"
+            className="flex items-center gap-2 text-[12px] text-primary"
+          >
+            <Check className="h-3.5 w-3.5" />
+            刚改了 {Array.from(changedIds).join('、')}，其余保留。
+          </div>
+        )}
+        {groups.length > 0 && (
+          <div
+            className="divide-y divide-border/50 border-y border-border/60"
+            aria-label="按元素分组的动作"
+          >
+            {groups.map(({ group, actions }, index) => (
+              <motion.section
+                key={group}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.06, duration: 0.24 }}
+                className="py-2"
+                aria-label={group + '的动作'}
+              >
+                <div className="px-2 pb-0.5 font-mono text-[10px] tracking-[0.16em] text-muted-foreground/70">
+                  {group}
+                </div>
+                {actions.map((a) => (
+                  <Row key={a.id} action={a} changed={changedIds.has(a.id)} />
+                ))}
+              </motion.section>
             ))}
           </div>
         )}
@@ -274,7 +308,7 @@ export function SceneCard(props: SceneCardProps) {
         {scene.memory.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 text-[12px]">
             <span className="font-mono text-[10px] uppercase tracking-wide text-primary/70">
-              用到你的偏好
+              <Brain className="mr-1 inline h-3 w-3" /> 与这些偏好一致
             </span>
             {scene.memory.map((m) => (
               <span
@@ -320,6 +354,33 @@ export function SceneCard(props: SceneCardProps) {
             小塔会说：“{scene.say}”
           </div>
         )}
+        <details className="group border-t border-border/50 pb-4 pt-3 text-[12px] text-muted-foreground">
+          <summary className="flex cursor-pointer list-none items-center justify-between py-1">
+            为什么这样安排
+            <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-3 space-y-2 leading-relaxed">
+            <p>
+              依据你的原话生成 {scene.actions.length}{' '}
+              项动作；没有安排的元素不会额外补齐。
+            </p>
+            {scene.memory.length > 0 ? (
+              <p>
+                上面的偏好与当前动作一致；拿走偏好后，下次生成会按新的档案建议。
+              </p>
+            ) : (
+              <p>这张提案没有标注与动作一致的已知偏好。</p>
+            )}
+            <p>
+              {scene.conditions.some((c) => c.status !== 'available') ||
+              scene.actions.some(
+                (a) => a.status === 'planned' || a.status === 'proposed',
+              )
+                ? '包含未落地能力，可以保存概念方案；带标记的条件或动作仍需后续接入。'
+                : '动作已按当前模拟车况检查。保存后留在本浏览器，不会操控车辆。'}
+            </p>
+          </div>
+        </details>
         {scene.offer.length > 0 &&
           scene.offer.map((o) => (
             <div
@@ -363,28 +424,43 @@ export function SceneCard(props: SceneCardProps) {
           </div>
         )}
         {props.editing && (
-          <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-secondary/50 p-1.5">
-            <input
-              value={props.editText}
-              onChange={(e) => props.onEditText(e.target.value)}
-              aria-label="修改当前场景"
-              maxLength={1200}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.nativeEvent.isComposing)
-                  props.onSubmitEdit();
-              }}
-              autoFocus
-              placeholder="灯再暗一点 / 小声一点 / 名字改成回家路上…"
-              className="flex-1 bg-transparent px-2 py-1.5 text-[14px] text-foreground outline-none placeholder:text-muted-foreground/50"
-            />
-            <button
-              disabled={!props.editText.trim()}
-              aria-label="提交修改"
-              onClick={props.onSubmitEdit}
-              className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[12px] text-primary-foreground"
-            >
-              <CornerDownLeft className="h-3.5 w-3.5" /> 改
-            </button>
+          <div className="space-y-2">
+            {quickEdits.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {quickEdits.map((e) => (
+                  <button
+                    key={e.capability}
+                    onClick={() => props.onSubmitEdit(e.label)}
+                    className="rounded-full border border-border bg-secondary/50 px-3 py-2 text-[12px] text-foreground/80 hover:border-primary/40"
+                  >
+                    {e.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-secondary/50 p-1.5">
+              <input
+                value={props.editText}
+                onChange={(e) => props.onEditText(e.target.value)}
+                aria-label="修改当前场景"
+                maxLength={1200}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing)
+                    props.onSubmitEdit();
+                }}
+                autoFocus
+                placeholder="说一句，只改你提到的这一项…"
+                className="flex-1 bg-transparent px-2 py-1.5 text-[14px] text-foreground outline-none placeholder:text-muted-foreground/50"
+              />
+              <button
+                disabled={!props.editText.trim()}
+                aria-label="提交修改"
+                onClick={() => props.onSubmitEdit()}
+                className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[12px] text-primary-foreground"
+              >
+                <CornerDownLeft className="h-3.5 w-3.5" /> 改
+              </button>
+            </div>
           </div>
         )}
         <p className="text-[11px] text-muted-foreground/60">
@@ -393,10 +469,10 @@ export function SceneCard(props: SceneCardProps) {
         <div className="flex gap-2">
           <button
             onClick={props.onSave}
-            disabled={!scene.canSave}
-            className="flex flex-[1.5] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-[14px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!scene.canSave || saved}
+            className="flex min-h-12 flex-[1.5] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-[15px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <Check className="h-4 w-4" /> 就这样保存
+            <Check className="h-4 w-4" /> {saved ? '已保存' : '就这样保存'}
           </button>
           <button
             onClick={props.onEdit}
