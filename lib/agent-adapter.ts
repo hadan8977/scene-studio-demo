@@ -1,6 +1,7 @@
 import { memoriesFor, parseScene, type Context, type Scene } from './scene.ts';
+import { CONTRACT as LIMIT, capOf } from './contract.ts';
 
-export function parseP13(value: unknown): Scene {
+export function parseAgentOutput(value: unknown): Scene {
   const s = parseScene(value);
   const fields = [
     'understanding',
@@ -20,14 +21,14 @@ export function parseP13(value: unknown): Scene {
   if (
     Object.keys(s).some((k) => !fields.includes(k)) ||
     fields.some((k) => !(k in s)) ||
-    s.understanding.length > 80 ||
-    s.name.length > 10 ||
-    s.say.length > 15 ||
-    s.actions.length > 8 ||
-    s.conditions.length > 4 ||
-    s.memory.length > 3
+    s.understanding.length > capOf(s.understanding, LIMIT.understanding) ||
+    s.name.length > capOf(s.name, LIMIT.name) ||
+    s.say.length > capOf(s.say, LIMIT.say) ||
+    s.actions.length > LIMIT.actions ||
+    s.conditions.length > LIMIT.conditions ||
+    s.memory.length > LIMIT.memory
   )
-    throw new Error('p13 输出结构不符');
+    throw new Error('模型输出不符合冻结契约');
   for (const a of s.actions)
     if (Object.keys(a).some((k) => !['primary', 'secondary'].includes(k)))
       throw new Error('动作结构不符');
@@ -95,7 +96,7 @@ export function requestEnvelope(input: {
   };
 }
 
-/** p13 emits a delta for edits. Merge it into the old scene before the existing edit guard. */
+/** 编辑时模型只回增量。 Merge it into the old scene before the existing edit guard. */
 export function adaptRevision(
   previous: Scene,
   delta: Scene,

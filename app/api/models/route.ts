@@ -17,7 +17,7 @@ export async function GET() {
       models: await availableModels(),
       defaultModel: PROMPT_INFO.model,
       prompt: PROMPT_INFO,
-      provider: 'DeepSeek 官方',
+      provider: '腾讯 dsv4flash 代理（失败回落 DeepSeek 官网）',
       error: '',
     },
     { headers: { 'Cache-Control': 'no-store' } },

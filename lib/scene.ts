@@ -1,4 +1,5 @@
 import { validStructuredValue } from './structured-values.ts';
+import { CONTRACT, capOf, overflows } from './contract.ts';
 import registryData from './data/capabilities.json' with { type: 'json' };
 import {
   readPreferences,
@@ -590,19 +591,31 @@ export function validateScene(
         reason: '当前能力表不支持',
       });
   }
-  if (
-    /^[\x00-\x7F\s]*$/.test(scene.say)
-      ? scene.say.trim().split(/\s+/).length > 8
-      : [...scene.say].length > 15
-  ) {
+  if (scene.say && overflows(scene.say, CONTRACT.say)) {
     decisions.push({
       primary: '小塔播报',
       original: scene.say,
       kind: 'other',
       status: 'unsupported',
-      reason: '话术过长，本次不播报',
+      reason: `话术过长（${[...scene.say].length} > ${capOf(scene.say, CONTRACT.say)} 字符），本次不播报`,
     });
     scene.say = '';
+  }
+  // 理解句和场景名超限不改写模型的话，只把超限这件事显性记下来，
+  // 真正的硬门在 parseAgentOutput：那一层直接判为不合契约并重来一次。
+  for (const [field, label] of [
+    ['understanding', '理解句'],
+    ['name', '场景名'],
+  ] as const) {
+    const text = scene[field];
+    if (text && overflows(text, CONTRACT[field]))
+      decisions.push({
+        primary: label,
+        original: text,
+        kind: 'other',
+        status: 'unsupported',
+        reason: `${label}超长（${[...text].length} > ${capOf(text, CONTRACT[field])} 字符）`,
+      });
   }
   scene.memory = scene.memory
     .filter(

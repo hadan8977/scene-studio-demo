@@ -1,4 +1,5 @@
 import type { Context, SceneResult } from './scene.ts';
+import { apiUrl } from './base-path.ts';
 
 export type RuntimeState = {
   vehicle: Record<string, string>;
@@ -25,7 +26,7 @@ export async function runtimeOperation(
 ): Promise<RuntimeState> {
   if (!result.runtime && !['save', 'apply_once', 'trigger'].includes(operation))
     throw new Error('该提案不属于技术服务');
-  const response = await fetch('/api/runtime', {
+  const response = await fetch(apiUrl('/api/runtime'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

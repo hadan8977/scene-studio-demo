@@ -179,7 +179,7 @@ void test('timed execution waits, supports per-device manual takeover, and undo 
   const start = q.advance(0, VEHICLE_DEFAULTS, ctx);
   assert.deepEqual(q.advance(300, q.undo(start), ctx), VEHICLE_DEFAULTS);
 });
-void test('future phases recheck driving policy and planned capabilities cannot execute', () => {
+void test('future phases recheck driving policy while a flattened table stays executable', () => {
   const s = sceneFrom(story('breeze'));
   s.actions = [
     { primary: '音量', secondary: '20%' },
@@ -192,10 +192,19 @@ void test('future phases recheck driving policy and planned capabilities cannot 
   assert.equal(p.pending.length, 0);
   for (const a of [
     { primary: '低速行人警报音', secondary: '关闭' },
-    { primary: '音乐播放', secondary: '放松' },
     { primary: '氛围灯颜色', secondary: '蓝色' },
   ])
     assert.equal(executable(validateScene({ ...s, actions: [a] }, ctx)), false);
+  // 能力表拉平后，原先按成熟度不给执行的能力与已上线能力同等可执行
+  assert.equal(
+    executable(
+      validateScene(
+        { ...s, actions: [{ primary: '音乐播放', secondary: '放松' }] },
+        ctx,
+      ),
+    ),
+    true,
+  );
 });
 void test('conditional activation is opt-in and rising-edge; a new trip can rearm it', () => {
   const s = sceneFrom(story('morning')),

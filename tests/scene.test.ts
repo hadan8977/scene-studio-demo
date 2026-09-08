@@ -21,7 +21,10 @@ test('out-of-range temperature is visibly clamped',()=>{
 });
 test('driving clamps windows and light, disables rhythm and rejects door/navigation',()=>{
  const r=validateScene({...emptyScene(),intent:'action',actions:[action('主驾车窗','50%'),action('氛围灯亮度','80%'),action('音乐律动','模式2'),action('左前门','开启'),action('导航目的地','家')]},{...ctx,driving:true});
- assert.deepEqual(r.scene.actions.map(a=>a.secondary),['20%','50%','关闭']);assert.equal(r.decisions.filter(d=>d.status==='forbidden').length,2);
+ assert.deepEqual(r.scene.actions.map(a=>a.secondary),['20%','50%','关闭']);
+ // 车门在删除线口径下不再是动作能力，先被能力表拦掉，行驶策略只需再拦导航
+ assert.equal(r.decisions.filter(d=>d.status==='forbidden').length,1);
+ assert.ok(r.decisions.some(d=>d.primary==='左前门'&&d.status==='unsupported'));
 });
 test('forbidden warning sound and nonexistent color never enter saved actions',()=>{
  const r=validateScene({...emptyScene(),intent:'action',actions:[action('低速行人警报音','关闭'),action('氛围灯颜色','蓝色'),action('音量','20%')]},ctx);
@@ -36,8 +39,9 @@ test('invalid comparison and range unit block condition',()=>{
   assert.equal(validateScene({...exampleScene('rain',ctx),conditions:[condition]},ctx).savable,false);
  }
 });
-test('planned and proposed conditions are labelled conceptual',()=>{
- const r=validateScene(exampleScene('rain',ctx),ctx);assert.equal(r.conceptual,true);assert.ok(r.decisions.some(d=>d.status==='planned'));assert.ok(r.decisions.some(d=>d.status==='proposed'));
+test('every capability in the table is equally usable, none is labelled conceptual',()=>{
+ const r=validateScene(exampleScene('rain',ctx),ctx);assert.equal(r.conceptual,false);
+ assert.ok(!r.decisions.some(d=>['planned','proposed'].includes(d.status)));
 });
 test('negative preference blocks fragrance / open windows',()=>{
  const s={...emptyScene(),intent:'action',actions:[action('香氛开关','开启'),action('主驾车窗','30%')]};
@@ -63,9 +67,12 @@ test('one wrong element alone is also rejected when user named the light',()=>{
 test('silently omitted unsupported trigger cannot turn into unconditional saved scene',()=>{
  const r=validateScene(exampleScene('wait',ctx),ctx,'到家前1公里调暗灯');assert.equal(r.savable,false);assert.ok(r.scene.clarify);
 });
-test('two immature actions are restricted to one and each removal is recorded',()=>{
+test('delisted values are cut while the rest of the table stays fully usable',()=>{
  const r=validateScene({...emptyScene(),intent:'action',actions:[action('主驾座椅按摩模式','波浪'),action('多媒体','播放')]},ctx);
- assert.equal(r.scene.actions.length,1);assert.ok(r.decisions.some(d=>d.reason.includes('最多展示1项')));
+ // 波浪是被删除线剔除的取值；多媒体不再因为成熟度被限流
+ assert.equal(r.scene.actions.length,1);assert.equal(r.scene.actions[0].primary,'多媒体');
+ assert.ok(r.decisions.some(d=>d.primary==='主驾座椅按摩模式'&&d.status==='unsupported'));
+ assert.ok(!r.decisions.some(d=>d.reason.includes('最多展示1项')));
 });
 test('ambiguous query is answered within same draft in example mode',()=>{
  const initial=replay(EXAMPLES.find(x=>x.id==='clarify')!.input,ctx);assert.equal(initial.savable,false);
