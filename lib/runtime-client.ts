@@ -32,7 +32,9 @@ type RawResult = {
     status: string;
     code?: string;
     reason: string;
-    capability?: string;
+    // 整条提案被拦时（注入、结构不合法）技术服务发的是 capability: null，
+    // 不是缺字段。声明成 string | undefined 会让这一支静默走错分支。
+    capability?: string | null;
   }[];
   provenance: Record<string, unknown> & {
     timing?: {
