@@ -2,19 +2,28 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DEMO_CASES } from '@/lib/demo-cases';
 export function CasePicker({ onTry }: { onTry: (text: string) => void }) {
-  const [tab, setTab] = useState<'scene' | 'control' | 'chat'>('scene'),
+  const [tab, setTab] = useState<'scene' | 'control'>('scene'),
     [page, setPage] = useState(0);
   const cases = DEMO_CASES.filter((c) =>
       tab === 'scene'
         ? c.entry === 'ambient'
-        : c.entry === 'counter' &&
-          (tab === 'chat' ? c.kind === 'chat' : c.kind !== 'chat'),
-    ),
+        : c.entry === 'counter' && c.kind !== 'chat',
+    ).sort((a, b) => {
+      const featured = [
+        'ambient-wait',
+        'ambient-emotion',
+        'ambient-anniversary',
+        'ambient-unwind-en',
+      ];
+      const rank = (id: string) =>
+        featured.includes(id) ? featured.indexOf(id) : featured.length;
+      return rank(a.id) - rank(b.id);
+    }),
     pages = Math.ceil(cases.length / 4);
   return (
     <div aria-label="主动服务示例" className="mb-5 w-[680px] px-2">
       <div className="mb-3 flex items-center gap-4">
-        {(['scene', 'control', 'chat'] as const).map((t) => (
+        {(['scene', 'control'] as const).map((t) => (
           <button
             aria-pressed={tab === t}
             key={t}
@@ -24,11 +33,7 @@ export function CasePicker({ onTry }: { onTry: (text: string) => void }) {
             }}
             className={`text-[18px] ${tab === t ? 'text-primary' : 'text-white/50'}`}
           >
-            {t === 'scene'
-              ? '场景建议'
-              : t === 'control'
-                ? '直接车控'
-                : '普通对话'}
+            {t === 'scene' ? '场景建议' : '直接车控'}
           </button>
         ))}
         <div className="ml-auto flex items-center gap-3 text-[17px] text-white/50">
@@ -50,11 +55,7 @@ export function CasePicker({ onTry }: { onTry: (text: string) => void }) {
         </div>
       </div>
       <p className="mb-3 text-[17px] text-white/45">
-        {tab === 'scene'
-          ? '先给方案，由你确认'
-          : tab === 'control'
-            ? '明确指令，直接处理'
-            : '只回应，不调整车辆'}
+        {tab === 'scene' ? '先给方案，由你确认' : '明确指令，直接处理'}
       </p>
       <div className="grid grid-cols-2 gap-2">
         {cases.slice(page * 4, page * 4 + 4).map((c) => (

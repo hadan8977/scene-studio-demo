@@ -82,6 +82,18 @@ const button = (name: string) => {
 };
 async function click(name: string) {
   if (
+    name.startsWith('体验 ') &&
+    visible('[aria-label="主动服务示例"]').length
+  ) {
+    for (
+      let page = 0;
+      page < 3 &&
+      !visible('button').some((b) => b.getAttribute('aria-label') === name);
+      page++
+    )
+      await click('下一组示例');
+  }
+  if (
     name === '保存' &&
     !buttons().some(
       (b) => !b.closest('[hidden],[inert]') && b.textContent?.trim() === '保存',
@@ -764,13 +776,6 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       );
       assert.equal(card(), undefined);
       assert.equal(stored().length, 0);
-      await click('清除对话');
-      await generate('今天心情很不好');
-      assert.equal(card(), undefined);
-      assert.match(
-        visible('[data-testid="voice-feedback"]')[0].textContent!,
-        /想说的时候/,
-      );
     },
   );
   await t.test(
@@ -1030,8 +1035,11 @@ test('Figma Make foundation with the production scene controller', async (t) => 
         /已进入露营模式/,
       );
       await click('清除对话');
-      await click('普通对话');
-      await click('体验 又堵车了');
+      assert.equal(
+        visible('button').some((b) => b.textContent?.trim() === '普通对话'),
+        false,
+      );
+      await generate('又堵了，烦死了');
       assert.equal(card(), undefined);
       assert.equal(stored().length, 0);
     },
@@ -1126,6 +1134,64 @@ test('Figma Make foundation with the production scene controller', async (t) => 
       } finally {
         globalThis.fetch = oldFetch;
       }
+    },
+  );
+  await t.test(
+    'v20 featured emotion, anniversary and English examples open relevant proposals',
+    async () => {
+      await mount();
+      assert.equal(
+        visible('[aria-label="主动服务示例"] button[aria-pressed]').length,
+        2,
+      );
+      for (const title of ['心情不好', '今天是纪念日', 'Time to unwind']) {
+        assert.ok(button('体验 ' + title));
+      }
+      await generate('今天心情很不好');
+      assert.match(card().textContent!, /缓一缓/);
+      await click('不要');
+      await click('体验 今天是纪念日');
+      assert.ok(card());
+      assert.match(card().textContent!, /浪漫/);
+      assert.match(card().textContent!, /提议中/);
+      assert.ok(button('好'));
+      assert.ok(button('不要'));
+      assert.equal(stored().length, 0);
+      await click('不要');
+      await click('体验 心情不好');
+      assert.match(card().textContent!, /缓一缓/);
+      assert.equal(stored().length, 0);
+      await click('不要');
+      await click('体验 Time to unwind');
+      assert.match(card().textContent!, /Unwind/);
+      assert.match(
+        visible('[data-testid="voice-feedback"]')[0].textContent!,
+        /Take a moment/,
+      );
+      assert.equal(stored().length, 0);
+    },
+  );
+  await t.test(
+    'v20 popup save and save-as keep the current surface until the user opens the app',
+    async () => {
+      await mount();
+      await click('体验 心情不好');
+      await click('好');
+      await click('保存');
+      assert.equal(button('主动服务弹窗').getAttribute('aria-pressed'), 'true');
+      assert.equal(stored().length, 1);
+      await click('清除对话');
+      await click('体验 心情不好');
+      await click('好');
+      await click('保存');
+      assert.ok(visible('[data-testid="duplicate-panel"]')[0]);
+      await click('另存');
+      assert.equal(button('主动服务弹窗').getAttribute('aria-pressed'), 'true');
+      assert.equal(stored().length, 2);
+      await click('场景应用');
+      await settle();
+      assert.equal(button('场景应用').getAttribute('aria-pressed'), 'true');
+      assert.equal(visible('button[aria-label="打开场景 缓一缓"]').length, 2);
     },
   );
   await act(async () => root.unmount());

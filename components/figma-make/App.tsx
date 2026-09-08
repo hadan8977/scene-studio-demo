@@ -22,9 +22,6 @@ export default function App() {
 
   const openReview = () => setReview(true);
   useEffect(() => {
-    if (gen.saveVersion) setView('manager');
-  }, [gen.saveVersion]);
-  useEffect(() => {
     if (gen.experience.viewRequest) setView('manager');
   }, [gen.experience.viewRequest]);
 

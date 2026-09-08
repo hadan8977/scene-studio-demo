@@ -171,13 +171,16 @@ export function routeInput(input: string, ctx: Context): IntentRoute {
       DEMO_CASES.find((c) => c.id === match)!,
       q,
     );
-  if (/心情|难受|吵架|想你|纪念日|生日|难过|sad|anniversary/i.test(q))
-    return {
-      ...base,
-      kind: 'chat',
-      reply: '我在。想聊的时候，慢慢说。',
-      reason: '情绪与关系类从不主动布景，也不据此写入记忆',
-    };
+  const emotional = /纪念日|anniversary/i.test(q)
+    ? 'ambient-anniversary'
+    : /心情.*(?:不好|低落|差)|难受|吵架|难过|sad|feeling down/i.test(q)
+      ? 'ambient-emotion'
+      : null;
+  if (emotional)
+    return fromCase(
+      DEMO_CASES.find((c) => c.id === emotional)!,
+      q,
+    );
   return {
     ...base,
     kind: 'chat',

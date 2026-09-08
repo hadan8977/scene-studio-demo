@@ -7,6 +7,8 @@ import {
 export type DemoCase = {
   id: string;
   title: string;
+  name?: string;
+  understanding?: string;
   input: string;
   entry: 'ambient' | 'create' | 'counter';
   category: string;
@@ -190,24 +192,53 @@ export const DEMO_CASES: DemoCase[] = [
     reply: '堵在路上确实烦，慢慢来，注意前方。',
   },
   {
-    id: 'chat-emotion',
+    id: 'ambient-emotion',
     title: '心情不好',
     input: '今天心情很不好',
-    entry: 'counter',
-    category: '只回应',
-    kind: 'chat',
-    summary: '情绪不主动布景，不推歌单、不猜关系。',
-    reply: '听起来今天不太顺。想说的时候，我在。',
+    entry: 'ambient',
+    category: '情绪与陪伴',
+    family: 'mood',
+    name: '缓一缓',
+    summary: '用柔和灯光和较低音量留一点安静，确认后再调整。',
+    understanding: '把光和声音放轻些，留一点安静。',
+    reply: '先给自己一点安静的时间。',
+    actions: [
+      ['氛围灯亮度', '20%'],
+      ['音量', '20%'],
+    ],
   },
   {
-    id: 'chat-anniversary',
+    id: 'ambient-anniversary',
     title: '今天是纪念日',
     input: '今天是我们的纪念日',
-    entry: 'counter',
-    category: '只回应',
-    kind: 'chat',
-    summary: '没有明确要求庆祝，不能擅自猜测并布景。',
-    reply: '这是一个特别的日子。',
+    entry: 'ambient',
+    category: '情绪与陪伴',
+    family: 'anniversary',
+    name: '特别的今天',
+    summary: '柔和灯光与浪漫音乐组成纪念日建议，音乐能力标注提议中。',
+    understanding: '柔和的光，配一点浪漫的旋律。',
+    reply: '给这个特别的日子，一点仪式感。',
+    actions: [
+      ['氛围灯亮度', '40%'],
+      ['音量', '20%'],
+      ['音乐播放', '浪漫'],
+    ],
+  },
+  {
+    id: 'ambient-unwind-en',
+    title: 'Time to unwind',
+    name: 'Unwind',
+    input: "It's been a long day. I could use a quiet moment.",
+    entry: 'ambient',
+    category: '情绪与陪伴',
+    family: 'unwind',
+    summary: '英文情境建议：降低声音与灯光，给漫长的一天留一段缓冲。',
+    understanding: 'Softer light, a quieter moment.',
+    reply: 'Take a moment for yourself.',
+    actions: [
+      ['氛围灯亮度', '20%'],
+      ['音量', '20%'],
+    ],
   },
   {
     id: 'chat-sleepy',
@@ -625,12 +656,23 @@ export function sceneForCase(id: string, ctx: Context, input?: string): Scene {
   };
   return {
     ...emptyScene(),
-    intent: c.entry === 'create' ? 'precise' : 'vague',
-    relevance: 0.9,
-    name: c.family === 'wait' ? (en ? 'Quiet moment' : '等你的片刻') : c.title,
-    understanding: en
-      ? `“${input || c.input}” — a little less light, a comfortable space to wait.`
-      : `${feeling[c.id] || (c.family === 'wait' ? feeling.wait : c.question?.replace(/要|吗？/g, '') || c.title)}。`,
+    intent:
+      c.entry === 'create'
+        ? 'precise'
+        : ['mood', 'anniversary', 'unwind'].includes(c.family || '')
+          ? 'affect'
+          : 'vague',
+    relevance: ['mood', 'anniversary', 'unwind'].includes(c.family || '')
+      ? 0.5
+      : 0.9,
+    name:
+      c.name ||
+      (c.family === 'wait' ? (en ? 'Quiet moment' : '等你的片刻') : c.title),
+    understanding:
+      c.understanding ||
+      (en
+        ? `“${input || c.input}” — a little less light, a comfortable space to wait.`
+        : `${feeling[c.id] || (c.family === 'wait' ? feeling.wait : c.question?.replace(/要|吗？/g, '') || c.title)}。`),
     conditions: (c.conditions || []).map(([primary, secondary, op]) => ({
       primary,
       secondary,

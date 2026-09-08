@@ -115,17 +115,14 @@ void test('service rejects an unconfigured model before a provider request', asy
   assert.equal(requests, 0);
 });
 
-void test('weak context is distinct from emotion, relationships, physiology and driving fatigue', () => {
+void test('context and emotion can propose scenes while physiology and driving fatigue retain their routes', () => {
   for (const c of DEMO_CASES.filter((c) => c.entry === 'ambient'))
     assert.equal(routeInput(c.input, parked).kind, 'suggestion');
-  for (const q of [
-    '今天心情很不好',
-    '今天是我们的纪念日',
-    '又堵了，烦死了',
-    '开车有点困',
-  ])
+  for (const q of ['又堵了，烦死了', '开车有点困'])
     assert.equal(routeInput(q, driving).kind, 'chat');
   assert.equal(routeInput('我有点困', driving).kind, 'chat');
+  assert.equal(routeInput('今天心情很不好', parked).kind, 'suggestion');
+  assert.equal(routeInput('今天是纪念日', parked).kind, 'suggestion');
   assert.equal(routeInput('热死了', parked).kind, 'control');
   assert.equal(
     routeInput('今天心情不好，给我来点安静的氛围', parked).kind,
