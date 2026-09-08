@@ -10,6 +10,7 @@ import {
 import { PROFILES } from './domain/profiles';
 import type { DrivingState, SavedScene } from './domain/types';
 import { useExperience } from './useExperience';
+import { useNonVoice } from './useNonVoice';
 import { similarScene, mergeScene } from '@/lib/scene-similarity';
 import type { SavedScene as StoredScene } from '@/lib/storage';
 import {
@@ -22,6 +23,7 @@ import {
 export function useGeneration() {
   const c = useSceneController(false);
   const experience = useExperience(c);
+  const nonVoice = useNonVoice(c, experience);
   const [duplicate, setDuplicate] = useState<StoredScene | null>(null);
   const [saveVersion, setSaveVersion] = useState(0);
   const lastRequest = useRef<{
@@ -116,6 +118,7 @@ export function useGeneration() {
       }
     : null;
   return {
+    nonVoice,
     phase,
     scene: result?.scene || null,
     result,

@@ -31,7 +31,7 @@ export function HmiFrame({
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center overflow-hidden bg-[#050506]"
+      className="fixed inset-0 flex items-center justify-center overflow-clip bg-[#050506]"
       style={{ perspective: 2600 }}
     >
       {/* 展厅光 */}
@@ -57,7 +57,7 @@ export function HmiFrame({
         <div className="pointer-events-none absolute inset-0 rounded-[46px] bg-[linear-gradient(155deg,rgba(255,255,255,0.09),transparent_26%)]" />
         <div className="pointer-events-none absolute inset-[3px] rounded-[42px] ring-1 ring-black/60" />
         {/* 屏幕玻璃 */}
-        <div className="relative h-full w-full overflow-hidden rounded-[32px] bg-background text-foreground">
+        <div className="relative h-full w-full overflow-clip rounded-[32px] bg-background text-foreground">
           <div className="h-full pb-[80px]">{children}</div>
           {chrome && (
             <div className="absolute inset-x-0 bottom-0 z-30 flex h-[80px] items-center justify-center border-t border-white/[0.04] bg-[#0b0c0e]/95">

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 
 export function useOverlayFocus(
   open: boolean,
@@ -6,12 +6,18 @@ export function useOverlayFocus(
   onClose: () => void,
 ) {
   const close = useRef(onClose);
-  close.current = onClose;
+  useLayoutEffect(() => {
+    close.current = onClose;
+  });
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
     const dialog = ref.current;
-    dialog?.querySelector<HTMLElement>('input,button')?.focus();
+    dialog
+      ?.querySelector<HTMLElement>(
+        'input:not([tabindex="-1"]),button:not([tabindex="-1"])',
+      )
+      ?.focus({ preventScroll: true });
     const keydown = (e: KeyboardEvent) => {
       if (!dialog || dialog.closest('[inert],[hidden]')) return;
       if (e.key === 'Escape') {
@@ -25,6 +31,7 @@ export function useOverlayFocus(
         ),
       ].filter(
         (el) =>
+          el.tabIndex !== -1 &&
           !el.closest('[hidden],[inert]') &&
           (!el.closest('details:not([open])') || el.tagName === 'SUMMARY'),
       );
@@ -32,16 +39,16 @@ export function useOverlayFocus(
         last = controls.at(-1);
       if (e.shiftKey && document.activeElement === first) {
         e.preventDefault();
-        last?.focus();
+        last?.focus({ preventScroll: true });
       } else if (!e.shiftKey && document.activeElement === last) {
         e.preventDefault();
-        first?.focus();
+        first?.focus({ preventScroll: true });
       }
     };
     document.addEventListener('keydown', keydown);
     return () => {
       document.removeEventListener('keydown', keydown);
-      if (previous?.isConnected) previous.focus();
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
   }, [open, ref]);
 }

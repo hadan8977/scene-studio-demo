@@ -1,8 +1,9 @@
 .git
 .next
-dist
-.wrangler
 node_modules
+test-results
 .env*
 !.env.example
 *.tsbuildinfo
+work
+outputs

@@ -22,6 +22,7 @@ import { Composer } from './Composer';
 import { SceneInspiration } from './SceneInspiration';
 import { PreferencePreview } from './PreferencePreview';
 import { PreferenceManager } from './PreferenceManager';
+import { LearnedHabits } from './NonVoiceLayer';
 import { DEMO_CASES } from '@/lib/demo-cases';
 import { PROFILES } from '../domain/profiles';
 import type { Generation } from '../useGeneration';
@@ -39,10 +40,12 @@ function SceneTile({
   s,
   onOpen,
   onRemove,
+  onAutomatic,
 }: {
   s: SavedScene;
   onOpen: () => void;
   onRemove: () => void;
+  onAutomatic?: () => void;
 }) {
   const cond = s.scene.conditions.length
     ? s.scene.conditions
@@ -111,6 +114,26 @@ function SceneTile({
           </span>
         </div>
       </button>
+      {(s.origin || s.scene.conditions.length > 0) && (
+        <div className="mt-3 flex items-center justify-between text-[20px] text-muted-foreground">
+          <span>
+            {s.origin?.entry === 'observation'
+              ? '观察发现'
+              : s.origin?.entry === 'capture'
+                ? '长按保存'
+                : '语音创建'}
+          </span>
+          {s.scene.conditions.length > 0 && onAutomatic && (
+            <button
+              aria-pressed={!!s.origin?.automatic}
+              onClick={onAutomatic}
+              className="min-h-12 rounded-xl px-3 text-primary"
+            >
+              {s.origin?.automatic ? '自动使用已开启' : '开启自动使用'}
+            </button>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -158,6 +181,12 @@ export function ManagerSurface({
     setModal(true);
   };
   const openExisting = (s: SavedScene) => {
+    const stored = gen.controller.saved.find((item) => item.id === s.id);
+    if (stored?.origin) {
+      setModal(false);
+      gen.nonVoice.openSaved(stored);
+      return;
+    }
     gen.openSaved(s);
     setModal(true);
   };
@@ -284,7 +313,11 @@ export function ManagerSurface({
                     <SceneTile
                       key={s.id}
                       s={toViewSaved(s)}
-                      onOpen={() => gen.experience.openIdea(s)}
+                      onOpen={() =>
+                        s.origin
+                          ? gen.nonVoice.openSaved(s, true)
+                          : gen.experience.openIdea(s)
+                      }
                       onRemove={() => gen.experience.removeIdea(s.id)}
                     />
                   ))}
@@ -382,6 +415,12 @@ export function ManagerSurface({
                         s={s}
                         onOpen={() => openExisting(s)}
                         onRemove={() => setDeleteId(s.id)}
+                        onAutomatic={() => {
+                          const stored = gen.controller.saved.find(
+                            (item) => item.id === s.id,
+                          );
+                          if (stored) gen.nonVoice.toggleSavedAuto(stored);
+                        }}
                       />
                     ))}
                 </AnimatePresence>
@@ -425,16 +464,19 @@ export function ManagerSurface({
             />
           )}
           {tab === 'learned' && (
-            <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-7">
-              <PreferenceManager
-                key={gen.profileId}
-                gen={gen}
-                surfaceActive={active}
-              />
-              <PreferencePreview
-                gen={gen}
-                onTry={() => tryExample(EXAMPLES[1].input)}
-              />
+            <div>
+              <LearnedHabits gen={gen} />
+              <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-7">
+                <PreferenceManager
+                  key={gen.profileId}
+                  gen={gen}
+                  surfaceActive={active}
+                />
+                <PreferencePreview
+                  gen={gen}
+                  onTry={() => tryExample(EXAMPLES[1].input)}
+                />
+              </div>
             </div>
           )}
         </div>

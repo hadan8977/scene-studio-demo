@@ -266,7 +266,9 @@ export function useSceneController(initialExample = true) {
             model,
             context: { ...ctx, vehicle },
             currentScene: previous,
-            existingScenes: saved.filter(s => !s.profileId || s.profileId === ctx.profile).map(s => ({ id: s.id, scene: s.result.scene })),
+            existingScenes: saved
+              .filter((s) => !s.profileId || s.profileId === ctx.profile)
+              .map((s) => ({ id: s.id, scene: s.result.scene })),
           }),
           signal: controller.signal,
         });
@@ -349,11 +351,32 @@ export function useSceneController(initialExample = true) {
       ctx.driving
     )
       throw new Error('请先完成一个可以保存的场景');
-    const selected = override?.result ? { ...override.result, runtime: override.result.runtime || s.result.runtime } : { ...s.result };
-    const runtimeSaved = selected.runtime || runtimeEnabled ? await runtimeOperation(selected, 'save', ctx) : undefined;
-    if (runtimeSaved) selected.runtime = { proposalId: runtimeSaved.proposal_id || '', registryRevision: runtimeSaved.registry_revision || '', valid: true, executable: selected.runtime?.executable ?? false, trace: selected.runtime?.trace || [], proposedScene: selected.scene };
+    const selected = override?.result
+      ? {
+          ...override.result,
+          runtime: override.result.runtime || s.result.runtime,
+        }
+      : { ...s.result };
+    const runtimeSaved =
+      selected.runtime || runtimeEnabled
+        ? await runtimeOperation(selected, 'save', ctx)
+        : undefined;
+    if (runtimeSaved)
+      selected.runtime = {
+        proposalId: runtimeSaved.proposal_id || '',
+        registryRevision: runtimeSaved.registry_revision || '',
+        valid: true,
+        executable: selected.runtime?.executable ?? false,
+        trace: selected.runtime?.trace || [],
+        proposedScene: selected.scene,
+      };
     const item: SavedScene = {
-      id: runtimeSaved?.scene_id || override?.id || s.activeId || crypto.randomUUID(),
+      ...s.saved.find((item) => item.id === (override?.id || s.activeId)),
+      id:
+        runtimeSaved?.scene_id ||
+        override?.id ||
+        s.activeId ||
+        crypto.randomUUID(),
       input: s.heard,
       source: s.source,
       profileId: ctx.profile,
@@ -361,7 +384,12 @@ export function useSceneController(initialExample = true) {
       updatedAt: new Date().toISOString(),
     };
     const replacedId = override?.id || s.activeId;
-    const next = upsertSaved(s.saved.filter(x => !replacedId || x.id !== replacedId || x.id === item.id), item);
+    const next = upsertSaved(
+      s.saved.filter(
+        (x) => !replacedId || x.id !== replacedId || x.id === item.id,
+      ),
+      item,
+    );
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       setSaved(next);
@@ -383,7 +411,9 @@ export function useSceneController(initialExample = true) {
       JSON.stringify(checked.scene) !== JSON.stringify(item.result.scene);
     setResult({
       ...checked,
-      runtime: item.result.runtime ? { ...item.result.runtime, proposalId: '' } : undefined,
+      runtime: item.result.runtime
+        ? { ...item.result.runtime, proposalId: '' }
+        : undefined,
       decisions: [
         ...checked.decisions,
         ...item.result.decisions.filter((d) => d.final === undefined),
@@ -637,7 +667,14 @@ export function useSceneController(initialExample = true) {
       showToast('删除失败，原场景已保留', true);
     }
   }
+  function storeScene(item: SavedScene) {
+    const next = upsertSaved(stateRef.current.saved, item);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    stateRef.current.saved = next;
+    setSaved(next);
+  }
   return {
+    storeScene,
     runtimeEnabled,
     ctx,
     result,

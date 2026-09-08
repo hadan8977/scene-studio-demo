@@ -340,7 +340,6 @@ export function validateScene(
         if (kind === 'condition') invalidCondition = true;
         continue;
       }
-      seen.add(a.primary);
       if (
         kind === 'condition' &&
         (!['==', '<', '<=', '>', '>='].includes(a.op || '') ||
@@ -475,6 +474,10 @@ export function validateScene(
               : '行驶中车窗最大开启20%';
         }
       }
+      // Only a validated delay creates a new phase. An invalid separator must
+      // not turn a duplicate into an immediately executable adjustment.
+      if (kind === 'action' && a.primary === '延时') seen.clear();
+      else seen.add(a.primary);
       result.push(a);
     }
     return result;

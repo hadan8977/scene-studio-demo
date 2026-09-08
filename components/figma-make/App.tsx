@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { LayoutGrid, Radio } from 'lucide-react';
+import { LayoutGrid, Radio, SlidersHorizontal, BookOpen } from 'lucide-react';
+import { NonVoiceLayer } from './components/NonVoiceLayer';
 import { MotionConfig } from 'motion/react';
 import { HmiFrame } from './components/HmiFrame';
 import { PopupSurface } from './components/PopupSurface';
@@ -30,7 +31,10 @@ export default function App() {
       {VIEWS.map((v) => (
         <button
           key={v.id}
-          onClick={() => setView(v.id)}
+          onClick={() => {
+            gen.nonVoice.close();
+            setView(v.id);
+          }}
           aria-label={v.label}
           aria-pressed={view === v.id}
           className={`flex items-center gap-2 rounded-full px-4 py-2 text-[20px] transition-colors ${view === v.id ? 'bg-primary text-primary-foreground' : 'text-white/60 hover:text-white'}`}
@@ -38,6 +42,24 @@ export default function App() {
           <v.icon className="h-4 w-4" /> {v.label}
         </button>
       ))}
+      <span className="mx-2 h-6 w-px bg-white/15" />
+      <button
+        onClick={() => {
+          setView('popup');
+          gen.nonVoice.openControls();
+        }}
+        className="flex min-h-12 items-center gap-2 rounded-full px-4 text-[20px] text-white/70 hover:text-primary"
+      >
+        <SlidersHorizontal className="h-5 w-5" />
+        车控
+      </button>
+      <button
+        onClick={() => gen.nonVoice.setPanel('stories')}
+        className="flex min-h-12 items-center gap-2 rounded-full px-4 text-[20px] text-white/70 hover:text-primary"
+      >
+        <BookOpen className="h-5 w-5" />
+        体验故事
+      </button>
     </div>
   );
 
@@ -45,16 +67,25 @@ export default function App() {
     <MotionConfig reducedMotion="user">
       <HmiFrame chrome={chrome}>
         <div className="relative h-full" inert={review}>
-          <div hidden={view !== 'popup'} className="h-full">
+          <div
+            hidden={view !== 'popup'}
+            inert={gen.nonVoice.panel !== 'closed'}
+            className="h-full"
+          >
             <PopupSurface gen={gen} onReview={openReview} />
           </div>
-          <div hidden={view !== 'manager'} className="h-full">
+          <div
+            hidden={view !== 'manager'}
+            inert={gen.nonVoice.panel !== 'closed'}
+            className="h-full"
+          >
             <ManagerSurface
               active={view === 'manager'}
               gen={gen}
               onReview={openReview}
             />
           </div>
+          <NonVoiceLayer gen={gen} />
         </div>
 
         <ReviewPanel

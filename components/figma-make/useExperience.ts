@@ -100,7 +100,13 @@ export function useExperience(c: Controller) {
     timers.current.forEach(clearTimeout);
     timers.current = [];
     if (runtimeApplied.current && applicationRef.current === 'applying') {
-      void runtimeOperation(runtimeApplied.current, 'cancel', c.ctx).catch(error => c.showToast(error instanceof Error ? error.message : '停止执行未确认', true));
+      void runtimeOperation(runtimeApplied.current, 'cancel', c.ctx).catch(
+        (error) =>
+          c.showToast(
+            error instanceof Error ? error.message : '停止执行未确认',
+            true,
+          ),
+      );
     }
     if (snapshot.current && (undo || applicationRef.current === 'applying')) {
       const next = restore(live.current, snapshot.current);
@@ -254,14 +260,32 @@ export function useExperience(c: Controller) {
       if (isImmediateControl(r, scene)) {
         if (result.runtime) {
           try {
-            const state = await runtimeOperation(result, 'apply_once', { ...c.ctx, vehicle: live.current });
+            const state = await runtimeOperation(result, 'apply_once', {
+              ...c.ctx,
+              vehicle: live.current,
+            });
             if (id !== job.current) return;
-            live.current = state.vehicle; setVehicle(state.vehicle);
-            runtimeApplied.current = { ...result, runtime: { ...result.runtime, proposalId: state.proposal_id || result.runtime.proposalId } };
-            setRoute({ ...r, kind: 'control', actions: scene.actions, reply: scene.understanding });
-            setFeedback('已调好。'); setPresentation('response');
+            live.current = state.vehicle;
+            setVehicle(state.vehicle);
+            runtimeApplied.current = {
+              ...result,
+              runtime: {
+                ...result.runtime,
+                proposalId: state.proposal_id || result.runtime.proposalId,
+              },
+            };
+            setRoute({
+              ...r,
+              kind: 'control',
+              actions: scene.actions,
+              reply: scene.understanding,
+            });
+            setFeedback('已调好。');
+            setPresentation('response');
           } catch (error) {
-            setFeedback(error instanceof Error ? error.message : '执行校验未通过');
+            setFeedback(
+              error instanceof Error ? error.message : '执行校验未通过',
+            );
             setPresentation('response');
           }
           return;
@@ -301,7 +325,9 @@ export function useExperience(c: Controller) {
         ...r,
         kind: r.kind === 'scene' ? 'scene' : 'suggestion',
         reply: scene.understanding,
-        reason: result.runtime ? '模型提议，经过技术服务完整校验' : 'p13 模型提议，经过现有能力校验',
+        reason: result.runtime
+          ? '模型提议，经过技术服务完整校验'
+          : 'p13 模型提议，经过现有能力校验',
       });
       if (c.ctx.driving) {
         keepIdea(result, input, 'live');
@@ -422,38 +448,101 @@ export function useExperience(c: Controller) {
     if (!c.result) return;
     if (c.result.runtime || c.runtimeEnabled) {
       const proposal = c.result;
-      if (!proposal.savable) { setFeedback('提案需要先补充完整。'); return; }
-      stopPreview(); snapshot.current = null; const id = ++job.current;
-      setApplication('applying'); setPresentation('response');
+      if (!proposal.savable) {
+        setFeedback('提案需要先补充完整。');
+        return;
+      }
+      stopPreview();
+      snapshot.current = null;
+      const id = ++job.current;
+      setApplication('applying');
+      setPresentation('response');
       try {
-        const state = await runtimeOperation(proposal, 'apply_once', { ...c.ctx, vehicle: live.current });
+        const state = await runtimeOperation(proposal, 'apply_once', {
+          ...c.ctx,
+          vehicle: live.current,
+        });
         if (id !== job.current) return;
-        live.current = state.vehicle; setVehicle(state.vehicle);
-        const applied: SceneResult = { ...proposal, runtime: { ...proposal.runtime, proposalId: state.proposal_id || proposal.runtime?.proposalId || '', registryRevision: state.registry_revision || proposal.runtime?.registryRevision || '', valid: true, executable: true, trace: proposal.runtime?.trace || [], proposedScene: proposal.scene } };
+        live.current = state.vehicle;
+        setVehicle(state.vehicle);
+        const applied: SceneResult = {
+          ...proposal,
+          runtime: {
+            ...proposal.runtime,
+            proposalId: state.proposal_id || proposal.runtime?.proposalId || '',
+            registryRevision:
+              state.registry_revision ||
+              proposal.runtime?.registryRevision ||
+              '',
+            valid: true,
+            executable: true,
+            trace: proposal.runtime?.trace || [],
+            proposedScene: proposal.scene,
+          },
+        };
         runtimeApplied.current = applied;
-        const due = [...new Set(state.timeline.filter(j => j.status === 'pending').map(j => j.due))].sort((a, b) => a - b);
+        const due = [
+          ...new Set(
+            state.timeline
+              .filter((j) => j.status === 'pending')
+              .map((j) => j.due),
+          ),
+        ].sort((a, b) => a - b);
         let prior = state.virtual_seconds;
         let segments = Promise.resolve();
         for (const at of due) {
-          const seconds = at - prior; prior = at;
-          timers.current.push(setTimeout(() => { segments = segments.then(async () => {
-            if (id !== job.current) return;
-            try {
-              const next = await runtimeOperation(applied, 'advance', c.ctx, { seconds });
-              if (id !== job.current) return;
-              live.current = next.vehicle; setVehicle(next.vehicle);
-              if (next.timeline.some(j => j.status !== 'pending' && j.status !== 'executed')) {
-                cancelPending(); setApplication('idle'); setFeedback('车况或能力已变化，后续动作已停止。');
-              } else if (!next.timeline.some(j => j.status === 'pending')) { setApplication('done'); setFeedback('已应用'); }
-            } catch (error) {
-              cancelPending(); setApplication('idle'); setFeedback(error instanceof Error ? error.message : '延时动作已停止');
-            }
-          }); }, Math.max(0, at - state.virtual_seconds) * 1000));
+          const seconds = at - prior;
+          prior = at;
+          timers.current.push(
+            setTimeout(
+              () => {
+                segments = segments.then(async () => {
+                  if (id !== job.current) return;
+                  try {
+                    const next = await runtimeOperation(
+                      applied,
+                      'advance',
+                      c.ctx,
+                      { seconds },
+                    );
+                    if (id !== job.current) return;
+                    live.current = next.vehicle;
+                    setVehicle(next.vehicle);
+                    if (
+                      next.timeline.some(
+                        (j) =>
+                          j.status !== 'pending' && j.status !== 'executed',
+                      )
+                    ) {
+                      cancelPending();
+                      setApplication('idle');
+                      setFeedback('车况或能力已变化，后续动作已停止。');
+                    } else if (
+                      !next.timeline.some((j) => j.status === 'pending')
+                    ) {
+                      setApplication('done');
+                      setFeedback('已应用');
+                    }
+                  } catch (error) {
+                    cancelPending();
+                    setApplication('idle');
+                    setFeedback(
+                      error instanceof Error ? error.message : '延时动作已停止',
+                    );
+                  }
+                });
+              },
+              Math.max(0, at - state.virtual_seconds) * 1000,
+            ),
+          );
         }
-        if (!due.length) { setApplication('done'); setFeedback('已应用'); }
-        else setFeedback('正在应用，可以随时撤销');
+        if (!due.length) {
+          setApplication('done');
+          setFeedback('已应用');
+        } else setFeedback('正在应用，可以随时撤销');
       } catch (error) {
-        setApplication('idle'); setFeedback(error instanceof Error ? error.message : '执行校验未通过');
+        setApplication('idle');
+        setFeedback(error instanceof Error ? error.message : '执行校验未通过');
       }
       return;
     }
@@ -516,6 +605,17 @@ export function useExperience(c: Controller) {
   }
 
   return {
+    putIdea: (item: SavedScene) =>
+      updateInbox(
+        [item, ...inboxRef.current.filter((x) => x.id !== item.id)].slice(
+          0,
+          30,
+        ),
+      ),
+    replaceVehicle: (values: Record<string, string>) => {
+      live.current = values;
+      setVehicle(values);
+    },
     route,
     presentation,
     feedback,
@@ -545,9 +645,15 @@ export function useExperience(c: Controller) {
         cancelPending();
         try {
           const state = await runtimeOperation(applied, 'restore', c.ctx);
-          live.current = state.vehicle; setVehicle(state.vehicle); runtimeApplied.current = null;
-          setApplication('idle'); setFeedback('已撤销'); setPresentation('proposal');
-        } catch (error) { setFeedback(error instanceof Error ? error.message : '还原未完成'); }
+          live.current = state.vehicle;
+          setVehicle(state.vehicle);
+          runtimeApplied.current = null;
+          setApplication('idle');
+          setFeedback('已撤销');
+          setPresentation('proposal');
+        } catch (error) {
+          setFeedback(error instanceof Error ? error.message : '还原未完成');
+        }
         return;
       }
       job.current++;

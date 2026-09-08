@@ -13,6 +13,7 @@ export type ActionStatus =
   | 'proposed'; // 提议中：需共建，不是现有能力
 
 export interface Action {
+  stage?: number;
   id: string;
   group: ActionGroup;
   /** 能力键，对应注册表 */
@@ -124,6 +125,7 @@ export interface GenerationResult {
 
 // 已保存的场景条目
 export interface SavedScene {
+  origin?: import('../../../lib/nonvoice').SceneOrigin;
   id: string;
   scene: Scene;
   source: 'example' | 'ai';

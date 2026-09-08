@@ -170,3 +170,8 @@
     line-height: 1.5;
   }
 }
+/* Large, tactile controls inside the original Figma cockpit. */
+.nv-range { accent-color: #cdec52; height: 30px; cursor: pointer; }
+.nv-range::-webkit-slider-runnable-track { height: 8px; border-radius: 8px; background: #46503b; }
+.nv-range::-webkit-slider-thumb { appearance: none; margin-top: -9px; width: 26px; height: 26px; border-radius: 50%; background: #cdec52; box-shadow: 0 0 0 7px #cdec5218; }
+.nv-range { appearance: none; background: transparent; }

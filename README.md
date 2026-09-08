@@ -1,8 +1,12 @@
-# 场景编排 Demo · v20
+# 场景编排 Demo · v21
 
 面向车主的场景应用与主动服务弹窗。基于上传的 Figma Make 原稿，保留倾斜显示器、深色柔绿主题、真实徐汇滨江街区地图和紧凑场景卡片。
 
-[在线体验](https://scene-studio-demo.vercel.app) · [本轮改动](docs/v20-update.md) · [p13 接入边界](docs/v19-integration.md)
+[在线体验](https://scene-studio-demo.vercel.app) · [非语音入口与七个故事](docs/v21-nonvoice.md) · [p13 接入边界](docs/v19-integration.md)
+
+屏幕底部新增「体验故事」与「车控」。五个生活故事和两个基础示例可离线体验观察建议、长按快存、按座位编辑、分阶段应用、撤销及下次出行；保存后不会跳转页面。观察记录与车况均为明确标注的演示数据。
+
+![七个故事的体验入口](docs/previews/v21/stories.png)
 
 ## 本地运行
 

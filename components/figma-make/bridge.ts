@@ -57,6 +57,7 @@ const conditionLabel = (
 /** Presentation adapter only: the Appendix C result and 114-entry validator remain authoritative. */
 export function toViewResult(result: SceneResult): GenerationResult {
   const raw = result.scene;
+  let stage = 0;
   const scene: Scene = {
     name: raw.name,
     understanding: raw.understanding,
@@ -93,7 +94,8 @@ export function toViewResult(result: SceneResult): GenerationResult {
           reason: d.reason,
         })),
     ],
-    actions: raw.actions.map((a) => {
+    actions: raw.actions.map((a, index) => {
+      if (a.primary === '延时') stage += parseFloat(a.secondary);
       const d = result.decisions.find(
         (d) =>
           d.kind === 'action' &&
@@ -101,7 +103,11 @@ export function toViewResult(result: SceneResult): GenerationResult {
           d.final !== undefined,
       );
       return {
-        id: a.primary,
+        id:
+          raw.actions.filter((x) => x.primary === a.primary).length > 1
+            ? `${a.primary}:${index}`
+            : a.primary,
+        stage,
         group: elementOf(a.primary),
         capability: a.primary,
         target: target(a.primary),
@@ -168,6 +174,7 @@ export function toViewResult(result: SceneResult): GenerationResult {
 
 export function toViewSaved(item: StoredScene): SavedScene {
   return {
+    origin: item.origin,
     id: item.id,
     input: item.input,
     scene: toViewResult(item.result).scene,
