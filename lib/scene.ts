@@ -147,6 +147,38 @@ export function waitingActions(ctx: Context): Entry[] {
     base.push({ primary: '自动空气净化', secondary: '开启' });
   return base;
 }
+/**
+ * 比较两组条件或动作是否等价。
+ *
+ * 技术服务（Part 1 Runtime）按字典序输出对象键，得到 {op, primary, secondary}；
+ * demo 这边按契约顺序是 {primary, op, secondary}。内容一模一样，
+ * JSON.stringify 出来却不同，于是「AI 改动了已确定的设置」这道守卫必然误报，
+ * 观察入口永远走不通。数组顺序仍然要一致，那是有意义的差异。
+ */
+export function sameEntries(a: Entry[], b: Entry[]) {
+  return (
+    a.length === b.length &&
+    a.every(
+      (x, i) =>
+        x.primary === b[i].primary &&
+        x.secondary === b[i].secondary &&
+        (x.op ?? '') === (b[i].op ?? ''),
+    )
+  );
+}
+
+/** 同上，比较整张卡片的可执行部分：条件、动作与它们的连接方式。 */
+export function sameSettings(
+  a: Pick<Scene, 'actions' | 'conditions' | 'logic'>,
+  b: Pick<Scene, 'actions' | 'conditions' | 'logic'>,
+) {
+  return (
+    a.logic === b.logic &&
+    sameEntries(a.actions, b.actions) &&
+    sameEntries(a.conditions, b.conditions)
+  );
+}
+
 export function elementOf(primary: string): Element {
   if (/氛围灯|律动|屏幕|遮阳帘|壁纸|主题/.test(primary)) return '光';
   if (/音乐|音量|音效|声场|声浪|静音|多媒体/.test(primary)) return '声';
@@ -708,8 +740,8 @@ export function mergeEdit(
     (k) => old.get(k)?.secondary !== next.get(k)?.secondary,
   );
   const conditionChanged =
-    JSON.stringify(previous.conditions) !==
-      JSON.stringify(proposed.conditions) || previous.logic !== proposed.logic;
+    !sameEntries(previous.conditions, proposed.conditions) ||
+    previous.logic !== proposed.logic;
   const sayChanged = previous.say !== proposed.say;
   // say 是对这次改动的旁白，不是被改动的设备组。p36 每次都会重写一句，
   // 把它算进 groups 会让「灯再暗一点」这种只点名一组的请求永远被判成多处变化。

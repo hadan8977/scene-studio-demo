@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 import { generate, inputFrom, generationConfigured } from '@/lib/generation';
 import { isInjection, emptyScene, validateScene } from '@/lib/scene';
-import { Part1Client, runtimeConfigured } from '@/lib/runtime-client';
+import { Part1Client, runtimeHealthy } from '@/lib/runtime-client';
 export async function POST(request: Request) {
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin)
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     );
   }
   const key = process.env.DEEPSEEK_OFFICIAL_API_KEY || process.env.DEEPSEEK_API_KEY;
-  if (!generationConfigured() && !runtimeConfigured())
+  if (!generationConfigured() && !(await runtimeHealthy()))
     return Response.json(
       {
         error:
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
           );
       };
       try {
-        if (runtimeConfigured())
+        if (await runtimeHealthy())
           await new Part1Client().generate(body, emit, lifecycle.signal);
         else if (isInjection(body.input))
           emit({

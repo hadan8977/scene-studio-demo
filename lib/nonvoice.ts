@@ -7,6 +7,7 @@ import {
   type Entry,
   type Scene,
   type SceneResult,
+  sameEntries,
 } from './scene.ts';
 
 export type Evidence = {
@@ -478,8 +479,7 @@ export class ScenePlayback {
     const checked = validateScene(this.scene, ctx);
     if (
       !executable(checked) ||
-      JSON.stringify(checked.scene.actions) !==
-        JSON.stringify(this.scene.actions)
+      !sameEntries(checked.scene.actions, this.scene.actions)
     ) {
       this.pending = [];
       throw new Error('车况或能力已变化，后续动作已停止');

@@ -4,8 +4,13 @@ import {
   generationConfigured,
   type GenerationEvent,
 } from '@/lib/generation';
-import { parseScene, validateScene } from '@/lib/scene';
-import { Part1Client, runtimeConfigured } from '@/lib/runtime-client';
+import {
+  parseScene,
+  validateScene,
+  sameEntries,
+  sameSettings,
+} from '@/lib/scene';
+import { Part1Client, runtimeHealthy } from '@/lib/runtime-client';
 import { validEvidence } from '@/lib/nonvoice';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -35,7 +40,7 @@ export async function POST(request: Request) {
       checked.decisions.some((d) =>
         ['forbidden', 'unsupported'].includes(d.status),
       ) ||
-      JSON.stringify(checked.scene.actions) !== JSON.stringify(scene.actions)
+      !sameEntries(checked.scene.actions, scene.actions)
     )
       throw Error('选定设置未通过能力检查');
     let completed: Extract<GenerationEvent, { type: 'result' }> | undefined;
@@ -54,7 +59,7 @@ export async function POST(request: Request) {
         ).size < 2
       )
         throw Error('观察依据未通过检查');
-      if (!runtimeConfigured())
+      if (!(await runtimeHealthy()))
         return Response.json(
           { error: '观察入口的 AI 运行时未连接；当前设置已保留，可直接保存。' },
           { status: 503 },
@@ -76,14 +81,7 @@ export async function POST(request: Request) {
         abort.signal,
       );
       const result = completed?.result;
-      if (
-        !result?.savable ||
-        JSON.stringify(result.scene.actions) !==
-          JSON.stringify(scene.actions) ||
-        JSON.stringify(result.scene.conditions) !==
-          JSON.stringify(scene.conditions) ||
-        result.scene.logic !== scene.logic
-      )
+      if (!result?.savable || !sameSettings(result.scene, scene))
         throw Error('AI 改动了已确定的设置，已拒绝该结果');
     } else {
       // 各供应商在 generation 里各读各的环境变量，这里只是兜底的那一个。

@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 import { Part1Client, runtimeConfigured } from '@/lib/runtime-client';
 import { inputFrom } from '@/lib/generation';
-import { parseScene } from '@/lib/scene';
+import { parseScene, sameSettings } from '@/lib/scene';
 
 export async function POST(request: Request) {
   const origin = request.headers.get('origin');
@@ -82,7 +82,8 @@ export async function POST(request: Request) {
     if (
       ['save', 'apply_once'].includes(body.operation) &&
       (!proposalId ||
-        JSON.stringify(scene) !== JSON.stringify(body.runtime?.proposedScene))
+        !body.runtime?.proposedScene ||
+        !sameSettings(scene, parseScene(body.runtime.proposedScene)))
     ) {
       const proposal = await client.json('/demo/prepare', { scene });
       if (!proposal.valid) throw new Error('编辑后的场景未通过完整校验');

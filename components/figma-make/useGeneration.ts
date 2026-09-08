@@ -147,7 +147,9 @@ export function useGeneration() {
     connection:
       mode === 'example'
         ? ('example' as const)
-        : c.catalogError
+        : // 有说明不等于坏了：技术服务掉线时仍有可用模型，只是观察入口用不了，
+          // 这种情况该显示已连接加一行说明，不该亮红灯说接口错误。
+          c.catalogError && !c.models.length
           ? ('error' as const)
           : c.configured
             ? ('connected' as const)

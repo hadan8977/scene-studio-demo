@@ -275,6 +275,29 @@ export class Part1Client {
   }
 }
 
+/**
+ * 技术服务（观察入口要用它）跑在另一台机器上，可能会掉线。
+ * 掉线时整站不该跟着废：这里做一次带缓存的健康检查，不健康就退回直连生成，
+ * 观察入口相应地显示未连接。缓存 15 秒，避免每次生成都多一次往返。
+ */
+let health: { at: number; ok: boolean } | null = null;
+
+export async function runtimeHealthy(ttlMs = 15000) {
+  if (!runtimeConfigured()) return false;
+  const now = Date.now();
+  if (health && now - health.at < ttlMs) return health.ok;
+  let ok = false;
+  try {
+    // 健康探测给 2.5 秒就够：活着是毫秒级，挂了等 12 秒只是让用户干等。
+    await new Part1Client().json('/health', undefined, AbortSignal.timeout(2500));
+    ok = true;
+  } catch {
+    ok = false;
+  }
+  health = { at: now, ok };
+  return ok;
+}
+
 export function editScope(text: string, scene: Scene) {
   const aliases: [RegExp, RegExp][] = [
     [/灯|light|glow/i, /灯/],
