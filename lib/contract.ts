@@ -33,3 +33,10 @@ export const capOf = (text: string, limit: FieldLimit) =>
 
 export const overflows = (text: string, limit: FieldLimit) =>
   countChars(text) > capOf(text, limit);
+
+/**
+ * 技术服务对整条提案的拦截（注入、动作条数超限、结构不合法）不带能力名。
+ * 这类拒绝不是「某一项没落地」，不该出现在卡片的逐项列表里——它的原因由
+ * 卡片底部的 blockReason 说明。用同一个占位名把两处对齐。
+ */
+export const PROPOSAL_LEVEL = '提案';

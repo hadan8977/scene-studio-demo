@@ -11,6 +11,7 @@ import {
   defaultPreferences,
   preferenceMemory,
 } from './user-preferences.ts';
+import { PROPOSAL_LEVEL } from './contract.ts';
 import type { GenerateInput, GenerationEvent } from './generation.ts';
 
 export type RuntimeReference = {
@@ -88,7 +89,7 @@ export function toProductResult(raw: RawResult): SceneResult {
   const merged = new Map<string, string[]>();
   for (const d of raw.decisions)
     if (d.status === 'blocked') {
-      const key = d.capability || '提案';
+      const key = d.capability || PROPOSAL_LEVEL;
       const reasons = merged.get(key) || [];
       if (!reasons.includes(d.reason)) reasons.push(d.reason);
       merged.set(key, reasons);
@@ -98,7 +99,7 @@ export function toProductResult(raw: RawResult): SceneResult {
     .filter((d) => {
       if (d.status !== 'blocked')
         return !d.capability || !blocked.has(d.capability);
-      const key = d.capability || '提案';
+      const key = d.capability || PROPOSAL_LEVEL;
       if (emitted.has(key)) return false;
       emitted.add(key);
       return true;
@@ -111,7 +112,7 @@ export function toProductResult(raw: RawResult): SceneResult {
             ? ('planned' as const)
             : ('accepted' as const);
       const value = valueOf(d.capability);
-      const key = d.capability || '提案';
+      const key = d.capability || PROPOSAL_LEVEL;
       return {
         primary: key,
         original: value ?? '',

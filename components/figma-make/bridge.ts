@@ -4,6 +4,7 @@ import {
   type Decision,
   type ProfileId,
 } from '../../lib/scene.ts';
+import { PROPOSAL_LEVEL } from '../../lib/contract.ts';
 import type { SavedScene as StoredScene } from '../../lib/storage.ts';
 import type {
   Action,
@@ -131,7 +132,12 @@ export function toViewResult(result: SceneResult): GenerationResult {
       negative: /不喜欢|不要/.test(content),
     })),
     unsupported: result.decisions
-      .filter((d) => d.kind !== 'condition' && d.final === undefined)
+      .filter(
+        (d) =>
+          d.kind !== 'condition' &&
+          d.final === undefined &&
+          d.primary !== PROPOSAL_LEVEL,
+      )
       .map((d, i) => ({
         id: `excluded:${i}`,
         group: elementOf(d.primary),

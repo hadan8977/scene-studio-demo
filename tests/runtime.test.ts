@@ -70,6 +70,7 @@ void test('a blocked capability drops its accepted twin and keeps both layers of
   assert.equal(result.decisions[0].status, 'forbidden');
   assert.equal(result.decisions[1].reason, '输入注入检测命中；输入有指令注入标记，不执行其任何片段');
   const view = toViewResult(result);
-  assert.equal(view.scene.unsupported.length, 2);
+  assert.equal(view.scene.unsupported.length, 1);
+  assert.equal(view.scene.unsupported[0].target, '主驾车窗');
   assert.equal(view.scene.blockReason, '行驶中车窗最多20%；输入注入检测命中；输入有指令注入标记，不执行其任何片段');
 });
