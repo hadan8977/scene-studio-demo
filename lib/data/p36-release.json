@@ -1,26 +1,26 @@
 {
- "release": "tencent-dsv4flash-p36-zh-2026-09-08",
+ "release": "dsv4flash-p36-zh-2026-09-08",
  "sha256": "cffcda9a8f58920e3cbcfc9d532373d204d865bb2098c75163b6d23a6707b6aa",
  "registryVersion": "2026-09-08.r3",
  "promptSource": "studies/round3/prompts/p36_zh.md",
  "model": "deepseek-v4-flash",
  "providers": [
   {
-   "via": "tencent",
-   "url": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
-   "model": "Deepseek-v4-flash",
-   "keyEnv": "DEEPSEEK_API_KEY",
-   "note": "腾讯代理要求模型名首字母大写"
-  },
-  {
    "via": "deepseek-official",
    "url": "https://api.deepseek.com/chat/completions",
    "model": "deepseek-v4-flash",
    "keyEnv": "DEEPSEEK_OFFICIAL_API_KEY",
-   "note": "腾讯侧限流或故障时回落，同一模型家族、同一份冻结提示词"
+   "note": "主用。腾讯代理实测中位 71.8s、最大 119.6s，官网 1.9s，交互式 demo 用官网。"
+  },
+  {
+   "via": "tencent",
+   "url": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+   "model": "Deepseek-v4-flash",
+   "keyEnv": "DEEPSEEK_API_KEY",
+   "note": "备用。模型名首字母大写是腾讯代理的要求。"
   }
  ],
- "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+ "endpoint": "https://api.deepseek.com/chat/completions",
  "contract": {
   "understanding": {
    "zh": 120,

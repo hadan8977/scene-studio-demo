@@ -178,7 +178,7 @@ void test('vehicle modes have their own host route and never become invented sce
     undefined,
   );
 });
-void test('direct AI test reaches the Tencent dsv4flash proxy with exact p36 configuration and traceable result', async () => {
+void test('direct AI test reaches the official DeepSeek endpoint with exact p36 configuration and traceable result', async () => {
   const events: GenerationEvent[] = [],
     scene = {
       ...emptyScene(),
@@ -194,12 +194,8 @@ void test('direct AI test reaches the Tencent dsv4flash proxy with exact p36 con
     new AbortController().signal,
     (async (url, opts) => {
       called++;
-      assert.equal(
-        url,
-        'https://chatapi.weixin.qq.com/openai/v1/chat/completions',
-      );
-      // 腾讯代理要求模型名首字母大写，对外的模型标识仍是小写
-      assert.equal(JSON.parse(opts!.body as string).model, 'Deepseek-v4-flash');
+      assert.equal(url, 'https://api.deepseek.com/chat/completions');
+      assert.equal(JSON.parse(opts!.body as string).model, 'deepseek-v4-flash');
       assert.equal(typeof opts?.body, 'string');
       const body = JSON.parse(opts!.body as string);
       assert.equal(body.max_tokens, 1000);

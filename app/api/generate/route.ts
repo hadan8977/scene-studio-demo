@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
-import { generate, inputFrom } from '@/lib/generation';
+import { generate, inputFrom, generationConfigured } from '@/lib/generation';
 import { isInjection, emptyScene, validateScene } from '@/lib/scene';
 import { Part1Client, runtimeConfigured } from '@/lib/runtime-client';
 export async function POST(request: Request) {
@@ -21,8 +21,8 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const key = process.env.DEEPSEEK_API_KEY;
-  if (!key && !runtimeConfigured())
+  const key = process.env.DEEPSEEK_OFFICIAL_API_KEY || process.env.DEEPSEEK_API_KEY;
+  if (!generationConfigured() && !runtimeConfigured())
     return Response.json(
       {
         error:

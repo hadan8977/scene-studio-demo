@@ -317,7 +317,7 @@ export const DEMO_CASES: DemoCase[] = [
   {
     id: 'winter',
     title: '冬日暖座',
-    input: '做一个冬天上车暖座的场景',
+    input: '做个冬天上车就暖和的场景',
     entry: 'create',
     category: '季节与定时',
     summary: '日期范围内，座椅、方向盘与温度一起准备。',
@@ -410,7 +410,7 @@ export const DEMO_CASES: DemoCase[] = [
   {
     id: 'birthday',
     title: '明确说出的庆祝',
-    input: '帮我做个生日庆祝场景，10月1日用',
+    input: '帮我做个生日庆祝场景，2026年10月1日用',
     entry: 'create',
     category: '娱乐与庆祝',
     summary: '指定日期、生日动效和灯光；明确请求才安排庆祝音乐。',
@@ -470,7 +470,7 @@ export const DEMO_CASES: DemoCase[] = [
   {
     id: 'sun',
     title: '日晒后的片刻',
-    input: '做个暴晒后上车降温的场景',
+    input: '做个暴晒后降温的场景',
     entry: 'create',
     category: '空气与日晒',
     summary: '遮阳帘、座椅通风、温度和风量，不只重复灯光音量。',

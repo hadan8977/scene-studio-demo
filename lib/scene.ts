@@ -273,6 +273,7 @@ export function validateScene(
   raw: Scene,
   ctx: Context,
   input = '',
+  changedNow: string[] = [],
 ): SceneResult {
   const scene = structuredClone(raw),
     decisions: Decision[] = [];
@@ -534,7 +535,18 @@ export function validateScene(
     return true;
   });
   if (['vague', 'affect'].includes(scene.intent) && scene.actions.length > 4) {
-    for (const a of scene.actions.splice(4)) {
+    // 编辑时新加的动作排在末尾，直接砍尾巴等于把用户刚要求的那一项丢掉，
+    // 卡片却还显示保存成功。本轮明确改动的先留下，多出来的从没动过的里砍。
+    const priority = new Set(changedNow);
+    const kept = new Set(
+      [
+        ...scene.actions.filter((a) => priority.has(a.primary)),
+        ...scene.actions.filter((a) => !priority.has(a.primary)),
+      ].slice(0, 4),
+    );
+    const dropped = scene.actions.filter((a) => !kept.has(a));
+    scene.actions = scene.actions.filter((a) => kept.has(a));
+    for (const a of dropped) {
       cut(a, 'action', 'unsupported', '舒适或情绪场景最多4个动作');
       const index = decisions.findIndex(
         (d) => d.primary === a.primary && d.final !== undefined,
@@ -588,7 +600,7 @@ export function validateScene(
         original: '',
         status: 'unsupported',
         kind: 'other',
-        reason: '当前能力表不支持',
+        reason: '这次没能表达的部分',
       });
   }
   if (scene.say && overflows(scene.say, CONTRACT.say)) {
@@ -632,6 +644,24 @@ export function validateScene(
   if (invalidCondition) {
     scene.clarify = '有触发条件暂时无法表达，请修改条件后再保存。';
   }
+  // p36 对攻击与第三方记忆是整条拒绝且不复述，理解句与播报都留空。
+  // 界面上那就是一张白卡，用户不知道发生了什么。补一条判定说明，
+  // 只说结果、不回放原话。
+  if (
+    scene.intent === 'none' &&
+    !scene.actions.length &&
+    !scene.conditions.length &&
+    !scene.clarify &&
+    !scene.say &&
+    !decisions.length
+  )
+    decisions.push({
+      primary: '这次请求',
+      original: '',
+      status: 'forbidden',
+      kind: 'other',
+      reason: '这条请求不能变成车内设置，没有生成任何动作',
+    });
   return {
     scene,
     decisions,
@@ -681,8 +711,9 @@ export function mergeEdit(
     JSON.stringify(previous.conditions) !==
       JSON.stringify(proposed.conditions) || previous.logic !== proposed.logic;
   const sayChanged = previous.say !== proposed.say;
+  // say 是对这次改动的旁白，不是被改动的设备组。p36 每次都会重写一句，
+  // 把它算进 groups 会让「灯再暗一点」这种只点名一组的请求永远被判成多处变化。
   const groups = new Set(changed.map(elementOf));
-  if (sayChanged) groups.add('话');
   if (conditionChanged) groups.add('其他');
   const requestedGroups = new Set<Element>();
   if (/灯|亮度|屏幕|dimmer|darker|brighter|light/i.test(input))
@@ -706,8 +737,14 @@ export function mergeEdit(
     };
   }
   const explicitMulti = /全部|整个|重新|所有|all|whole|recreate/i.test(input);
+  // 用户一句话里自己点名了两组以上，模型改的又正好在这几组里，那就是照做，
+  // 不是模型擅自扩大范围，没有必要反过来问他想先改哪一项。
+  const askedForAll =
+    requestedGroups.size > 1 &&
+    [...groups].every((g) => requestedGroups.has(g) || g === '其他');
   if (
     !explicitMulti &&
+    !askedForAll &&
     (groups.size > 1 ||
       (changed.length > 1 &&
         !/替换|改成|换成|改为|replace|instead/i.test(input)))

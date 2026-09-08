@@ -2,6 +2,7 @@ import release from './data/p36-release.json' with { type: 'json' };
 import {
   requestEnvelope,
   adaptRevision,
+  adaptCompletion,
   parseAgentOutput,
 } from './agent-adapter.ts';
 import { validPreference } from './user-preferences.ts';
@@ -26,7 +27,7 @@ export const PROMPT_INFO = {
   sha256: release.sha256,
   registryVersion: release.registryVersion,
   model: release.model,
-  transport: 'tencent-dsv4flash',
+  transport: release.providers[0].via,
   contract: release.contract,
 };
 
@@ -36,12 +37,17 @@ export const PROMPT_INFO = {
  */
 function providers(key: string) {
   return release.providers
-    .map((p) => ({
+    .map((p, i) => ({
       ...p,
-      // 第一家用调用方传进来的密钥，其余各自读自己的环境变量。
-      key: p.via === release.providers[0].via ? key : process.env[p.keyEnv],
+      // 各家读自己的环境变量；第一家没配就退回调用方传进来的密钥。
+      key: process.env[p.keyEnv] || (i === 0 ? key : undefined),
     }))
     .filter((p): p is typeof p & { key: string } => !!p.key);
+}
+
+/** 只要有任意一家的密钥就算接上了真实模型。 */
+export function generationConfigured() {
+  return release.providers.some((p) => !!process.env[p.keyEnv]);
 }
 export async function availableModels(
   _fetcher: typeof fetch = fetch,
@@ -297,9 +303,19 @@ export async function generate(
             adaptRevision(input.currentScene, parsed, input.input),
             input.input,
           )
-        : { scene: parsed, changed: [] };
+        : {
+            scene: input.currentScene?.clarify
+              ? adaptCompletion(input.currentScene, parsed)
+              : parsed,
+            changed: [],
+          };
     const result = {
-      ...validateScene(merged.scene, input.context, input.input),
+      ...validateScene(
+        merged.scene,
+        input.context,
+        input.input,
+        merged.changed,
+      ),
       changed: merged.changed,
     };
     emit({
