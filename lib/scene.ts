@@ -1,5 +1,5 @@
 import { validStructuredValue } from './structured-values.ts';
-import { CONTRACT, capOf, overflows } from './contract.ts';
+import { CONTRACT, capOf, countChars, overflows } from './contract.ts';
 import registryData from './data/capabilities.json' with { type: 'json' };
 import {
   readPreferences,
@@ -597,7 +597,7 @@ export function validateScene(
       original: scene.say,
       kind: 'other',
       status: 'unsupported',
-      reason: `话术过长（${[...scene.say].length} > ${capOf(scene.say, CONTRACT.say)} 字符），本次不播报`,
+      reason: `话术过长（${countChars(scene.say)} > ${capOf(scene.say, CONTRACT.say)} 字符），本次不播报`,
     });
     scene.say = '';
   }
@@ -614,7 +614,7 @@ export function validateScene(
         original: text,
         kind: 'other',
         status: 'unsupported',
-        reason: `${label}超长（${[...text].length} > ${capOf(text, CONTRACT[field])} 字符）`,
+        reason: `${label}超长（${countChars(text)} > ${capOf(text, CONTRACT[field])} 字符）`,
       });
   }
   scene.memory = scene.memory

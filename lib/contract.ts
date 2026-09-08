@@ -19,10 +19,17 @@ export const CONTRACT = {
 
 export type FieldLimit = { zh: number; en: number };
 
-export const isLatin = (text: string) => /^[\x00-\x7F\s]*$/.test(text);
+/**
+ * 按码点数，和评测脚本里 Python 的 len() 一致；JS 的 .length 数的是
+ * UTF-16 单元，遇到超出基本平面的字符会和评测口径对不上。
+ */
+export const countChars = (text: string) => Array.from(text).length;
+
+export const isLatin = (text: string) =>
+  !Array.from(text).some((ch) => ch.codePointAt(0)! > 0x7f);
 
 export const capOf = (text: string, limit: FieldLimit) =>
   isLatin(text) ? limit.en : limit.zh;
 
 export const overflows = (text: string, limit: FieldLimit) =>
-  [...text].length > capOf(text, limit);
+  countChars(text) > capOf(text, limit);

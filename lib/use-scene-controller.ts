@@ -24,11 +24,11 @@ import {
   type ProfileSettings,
 } from '@/lib/profile-settings';
 import {
-import { apiUrl } from './base-path.ts';
   validPreference,
   readPreferences,
   type UserPreference,
 } from '@/lib/user-preferences';
+import { apiUrl } from './base-path.ts';
 
 const initialContext: Context = { driving: false, profile: 'none' };
 type Source = 'live' | 'example';

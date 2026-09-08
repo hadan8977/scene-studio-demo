@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import release from '../lib/data/p36-release.json' with { type: 'json' };
 import { CONTRACT, capOf, overflows } from '../lib/contract.ts';
 
-test('contract limits match the frozen release record', () => {
+void test('contract limits match the frozen release record', () => {
   assert.deepEqual(JSON.parse(JSON.stringify(CONTRACT)), release.contract);
 });
 
-test('latin text gets the wide limit, chinese the narrow one', () => {
+void test('latin text gets the wide limit, chinese the narrow one', () => {
   assert.equal(capOf('Seat heating on', CONTRACT.say), 60);
   assert.equal(capOf('座椅加热开好了', CONTRACT.say), 30);
   assert.equal(overflows('x'.repeat(60), CONTRACT.say), false);
@@ -16,7 +16,7 @@ test('latin text gets the wide limit, chinese the narrow one', () => {
   assert.equal(overflows('好'.repeat(31), CONTRACT.say), true);
 });
 
-test('the shipped registry is the round-three strikethrough build', () => {
+void test('the shipped registry is the round-three strikethrough build', () => {
   assert.equal(release.registryVersion, '2026-09-08.r3');
   assert.equal(release.model, 'deepseek-v4-flash');
   assert.equal(release.providers[0].via, 'tencent');
