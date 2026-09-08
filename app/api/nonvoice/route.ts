@@ -94,11 +94,15 @@ export async function POST(request: Request) {
           { error: 'AI 命名未连接，仍可使用当前名称保存。' },
           { status: 503 },
         );
+      // 「起个名字」不是车控动作，p36 会判成 intent=none 并回空名字（实测 0/4）。
+      // 换成契约内的说法——把手动调好的设置存成场景、设置一项不改——稳定 4/4
+      // 拿到贴合语境的名字。只取名字：模型的理解句会复述这段指令本身，
+      // 卡片上显示出来是机器味的，保留界面原有那句更好。
       await generate(
         {
           ...input,
           input:
-            '为这组已经选好的车内设置起一个简短中文名称：' +
+            '我刚把车里手动调成了这样，帮我存成一个场景，名字取得贴合此刻的感觉，设置一项都别改：' +
             JSON.stringify({
               actions: scene.actions,
               conditions: scene.conditions,
@@ -110,7 +114,16 @@ export async function POST(request: Request) {
       );
     }
     const result = completed?.result;
-    if (!result?.scene.name.trim()) throw Error('未收到有效名称');
+    // 命名失败不该让整次手动创建作废，设置本来就是用户自己选好的。
+    if (!result || !result.scene.name.trim())
+      return Response.json(
+        {
+          name: '',
+          note: 'AI 这次没给出名称，设置已保留，可自己命名后保存。',
+          timing: completed?.timing,
+        },
+        { status: 200 },
+      );
     return Response.json({
       name: result.scene.name.slice(0, 20),
       understanding:

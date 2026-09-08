@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 import { generate, inputFrom, generationConfigured } from '@/lib/generation';
 import { isInjection, emptyScene, validateScene } from '@/lib/scene';
-import { Part1Client, runtimeHealthy } from '@/lib/runtime-client';
+import { Part1Client, runtimeHealthy, editScope } from '@/lib/runtime-client';
 export async function POST(request: Request) {
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin)
@@ -45,8 +45,25 @@ export async function POST(request: Request) {
           );
       };
       try {
-        if (await runtimeHealthy())
-          await new Part1Client().generate(body, emit, lifecycle.signal);
+        // 技术服务只允许改场景里已有的动作。新增一项、只改名字这类修改它
+        // 表达不了，与其让它拒收再兜，不如先按结构判断直接走直连。
+        const revising = !!body.currentScene && !body.currentScene.clarify;
+        const outOfScope =
+          revising && !editScope(body.input, body.currentScene!).length;
+        if ((await runtimeHealthy()) && !(outOfScope && key))
+          try {
+            await new Part1Client().generate(body, emit, lifecycle.signal);
+          } catch (error) {
+            // 技术服务只允许改场景里已有的动作。新增一项、只改名字这类修改
+            // 它表达不了，会整条拒收；这种时候退回直连生成，而不是让用户
+            // 看到一句英文报错。其它错误照常抛出。
+            const text = error instanceof Error ? error.message : '';
+            const scopeIssue =
+              /scope|Choose existing actions|explicit action/i.test(text);
+            if (!scopeIssue || !key || lifecycle.signal.aborted) throw error;
+            emit({ type: 'retry', text: '这次修改换个方式处理' });
+            await generate(body, key, emit, lifecycle.signal);
+          }
         else if (isInjection(body.input))
           emit({
             type: 'result',

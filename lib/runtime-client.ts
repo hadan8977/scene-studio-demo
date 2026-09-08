@@ -65,6 +65,11 @@ export function toProductResult(raw: RawResult): SceneResult {
       SCENE_FIELDS.map((k) => [k, raw.scene[k as keyof Scene]]),
     ),
   );
+  // 技术服务是整条退回：只要有一项不合法，整个提案 valid=false。
+  // 界面上那就是一张有动作却存不下、也没说为什么的卡片。补一句说明。
+  if (!raw.valid && !scene.clarify)
+    scene.clarify =
+      '这次提案里有当前不允许的项，已整条退回，换个说法再试一次。';
   return {
     scene,
     savable: raw.savable && raw.valid,
@@ -298,23 +303,30 @@ export async function runtimeHealthy(ttlMs = 15000) {
   return ok;
 }
 
+const EDIT_ALIASES: [RegExp, RegExp][] = [
+  [/灯|light|glow/i, /灯/],
+  [/温度|temperature|cooler|warmer/i, /温度控制/],
+  [/音量|volume/i, /^音量$/],
+  [/风量|fan|airflow/i, /风量/],
+  [/香氛|fragrance/i, /香氛/],
+  [/座椅|seat/i, /座椅/],
+  [/车窗|window/i, /车窗/],
+  [/屏幕|screen|display/i, /屏幕/],
+  [/声场|音乐|music|sound/i, /声场|音乐/],
+];
+
+const mentions = (text: string, primary: string) =>
+  text.includes(primary) ||
+  EDIT_ALIASES.some(([words, name]) => words.test(text) && name.test(primary));
+
+/**
+ * 技术服务只允许修改「场景里已有的动作」，范围必须点名。
+ * 新增一项、只改名字这两类修改它表达不了，会整条拒收——那种请求在
+ * app/api/generate 里退回直连生成，不在这里硬凑范围（凑出来的能力名
+ * 运行时同样不认，报 Choose existing actions to revise）。
+ */
 export function editScope(text: string, scene: Scene) {
-  const aliases: [RegExp, RegExp][] = [
-    [/灯|light|glow/i, /灯/],
-    [/温度|temperature|cooler|warmer/i, /温度控制/],
-    [/音量|volume/i, /^音量$/],
-    [/风量|fan|airflow/i, /风量/],
-    [/香氛|fragrance/i, /香氛/],
-    [/座椅|seat/i, /座椅/],
-    [/车窗|window/i, /车窗/],
-  ];
   return scene.actions
-    .filter(
-      (a) =>
-        text.includes(a.primary) ||
-        aliases.some(
-          ([words, name]) => words.test(text) && name.test(a.primary),
-        ),
-    )
+    .filter((a) => mentions(text, a.primary))
     .map((a) => a.primary);
 }
