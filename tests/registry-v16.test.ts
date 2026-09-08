@@ -33,14 +33,14 @@ test('v16 time and calendar fields reject invalid clocks and dates, including pl
   }
 });
 
-test('named songs preserve spaces, remain planned, and never accept a placeholder', () => {
+test('named songs preserve spaces, are equally usable, and never accept a placeholder', () => {
   const accepted = validateScene(
     proposal('播放指定音乐', 'Here Comes the Sun'),
     ctx,
   );
   assert.equal(accepted.scene.actions[0].secondary, 'Here Comes the Sun');
-  assert.equal(accepted.decisions[0].status, 'planned');
-  assert.equal(accepted.conceptual, true);
+  assert.equal(accepted.decisions[0].status, 'accepted');
+  assert.equal(accepted.conceptual, false);
   assert.equal(
     validateScene(proposal('播放指定音乐', '歌曲名'), ctx).savable,
     false,
@@ -48,7 +48,7 @@ test('named songs preserve spaces, remain planned, and never accept a placeholde
   assert.ok(!systemPrompt().includes('没有指定歌名'));
 });
 
-test('video and karaoke remain planned when parked and cannot open while driving', () => {
+test('video and karaoke are usable when parked and cannot open while driving', () => {
   for (const primary of [
     '本地视频',
     '腾讯视频',
@@ -60,7 +60,7 @@ test('video and karaoke remain planned when parked and cannot open while driving
   ]) {
     assert.equal(
       validateScene(proposal(primary, '打开'), ctx).decisions[0].status,
-      'planned',
+      'accepted',
     );
     const r = validateScene(proposal(primary, '打开'), {
       ...ctx,

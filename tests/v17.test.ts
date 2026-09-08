@@ -93,7 +93,8 @@ void test('direct controls, official presets and vague car-control questions nev
   assert.equal(routeInput('灯再暗一点', parked).kind, 'control');
   assert.equal(routeInput('打开灯光', parked).kind, 'control');
   const preset = controlResult(routeInput('进入露营模式', parked), parked);
-  assert.equal(preset.conceptual, true);
+  // 情景模式与其它能力同等，不再标概念展示
+  assert.equal(preset.conceptual, false);
   assert.equal(preset.scene.actions.length, 1);
 });
 

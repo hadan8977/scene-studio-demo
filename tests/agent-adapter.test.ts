@@ -11,8 +11,8 @@ import {
 import {
   requestEnvelope,
   adaptRevision,
-  parseP13,
-} from '../lib/p13-adapter.ts';
+  parseAgentOutput,
+} from '../lib/agent-adapter.ts';
 import {
   emptyScene,
   mergeEdit,
@@ -23,15 +23,15 @@ import { isImmediateControl, routeInput } from '../lib/intent-routing.ts';
 import { exampleScene } from '../lib/examples.ts';
 import { vehicleShortcut } from '../lib/vehicle-shortcuts.ts';
 const ctx = { driving: false, profile: 'none' as const };
-void test('runtime prompt is the unmodified p13 frozen release, including examples', () => {
+void test('runtime prompt is the unmodified p36 frozen release, including examples', () => {
   const file = readFileSync(
-    new URL('../lib/prompts/p13-system-zh.md', import.meta.url),
+    new URL('../lib/prompts/p36-system-zh.md', import.meta.url),
     'utf8',
   ).replace(/\r\n/g, '\n');
   assert.equal(systemPrompt(), file);
   assert.equal(
     createHash('sha256').update(file).digest('hex'),
-    '57488940054541ba99365f4e9521391783b42902d468ef68699ae171804d8c12',
+    'cffcda9a8f58920e3cbcfc9d532373d204d865bb2098c75163b6d23a6707b6aa',
   );
   assert.equal(PROMPT_INFO.model, 'deepseek-v4-flash');
 });
@@ -79,15 +79,15 @@ void test('partial p13 edits retain unrelated actions and are still checked by t
   );
 });
 void test('p13 structure rejects extra fields and overlong replies before capability validation', () => {
-  assert.throws(() => parseP13({ ...emptyScene(), extra: 'unexpected' }));
-  assert.throws(() => parseP13({ ...emptyScene(), say: 'x'.repeat(16) }));
+  assert.throws(() => parseAgentOutput({ ...emptyScene(), extra: 'unexpected' }));
+  assert.throws(() => parseAgentOutput({ ...emptyScene(), say: 'x'.repeat(61) }));
   assert.throws(() =>
-    parseP13({
+    parseAgentOutput({
       ...emptyScene(),
       offer: { type: 'none', target: '', execute: true },
     }),
   );
-  assert.ok(parseP13(emptyScene()));
+  assert.ok(parseAgentOutput(emptyScene()));
 });
 
 void test('an action label cannot apply an explicit or weak scene request without confirmation', () => {
@@ -168,16 +168,17 @@ void test('vehicle modes have their own host route and never become invented sce
   );
   assert.equal(vehicleShortcut('进入露营模式', true)?.applied, false);
   assert.equal(vehicleShortcut('做一个露营场景', false), null);
+  // 能力表按删除线口径拉平后，未上线能力与已上线能力同等，不再标成熟度
   assert.equal(
     capabilities.find((c) => c.zh === '进入情景模式')?.maturity,
-    'planned',
+    'released',
   );
   assert.equal(
     capabilities.find((c) => c.zh === '录音模式'),
     undefined,
   );
 });
-void test('direct AI test reaches official DeepSeek with exact p13 configuration and traceable result', async () => {
+void test('direct AI test reaches the official DeepSeek endpoint with exact p36 configuration and traceable result', async () => {
   const events: GenerationEvent[] = [],
     scene = {
       ...emptyScene(),
@@ -194,6 +195,7 @@ void test('direct AI test reaches official DeepSeek with exact p13 configuration
     (async (url, opts) => {
       called++;
       assert.equal(url, 'https://api.deepseek.com/chat/completions');
+      assert.equal(JSON.parse(opts!.body as string).model, 'deepseek-v4-flash');
       assert.equal(typeof opts?.body, 'string');
       const body = JSON.parse(opts!.body as string);
       assert.equal(body.max_tokens, 1000);

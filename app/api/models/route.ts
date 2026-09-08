@@ -1,6 +1,6 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-import { availableModels, PROMPT_INFO } from '@/lib/generation';
+import { availableModels, PROMPT_INFO, generationConfigured } from '@/lib/generation';
 import { Part1Client, runtimeConfigured } from '@/lib/runtime-client';
 export async function GET() {
   if (runtimeConfigured()) {
@@ -13,11 +13,11 @@ export async function GET() {
   }
   return Response.json(
     {
-      configured: !!process.env.DEEPSEEK_API_KEY,
+      configured: generationConfigured(),
       models: await availableModels(),
       defaultModel: PROMPT_INFO.model,
       prompt: PROMPT_INFO,
-      provider: 'DeepSeek 官方',
+      provider: 'DeepSeek 官网（备用：腾讯 dsv4flash 代理）',
       error: '',
     },
     { headers: { 'Cache-Control': 'no-store' } },

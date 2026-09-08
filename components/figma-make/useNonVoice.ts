@@ -25,6 +25,7 @@ import {
 import type { SavedScene } from '@/lib/storage';
 import { similarScene } from '@/lib/scene-similarity';
 import { runtimeOperation, type RuntimeState } from '@/lib/runtime-browser';
+import { apiUrl } from '@/lib/base-path';
 
 type Draft = {
   scene: Scene;
@@ -876,7 +877,7 @@ export function useNonVoice(
     setNote('');
     const timeout = setTimeout(() => abort.abort(), 30000);
     try {
-      const r = await fetch('/api/nonvoice', {
+      const r = await fetch(apiUrl('/api/nonvoice'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: abort.signal,

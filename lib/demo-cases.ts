@@ -317,7 +317,7 @@ export const DEMO_CASES: DemoCase[] = [
   {
     id: 'winter',
     title: '冬日暖座',
-    input: '做一个冬天上车暖座的场景',
+    input: '做个冬天上车就暖和的场景',
     entry: 'create',
     category: '季节与定时',
     summary: '日期范围内，座椅、方向盘与温度一起准备。',
@@ -410,7 +410,7 @@ export const DEMO_CASES: DemoCase[] = [
   {
     id: 'birthday',
     title: '明确说出的庆祝',
-    input: '帮我做个生日庆祝场景，10月1日用',
+    input: '帮我做个生日庆祝场景，2026年10月1日用',
     entry: 'create',
     category: '娱乐与庆祝',
     summary: '指定日期、生日动效和灯光；明确请求才安排庆祝音乐。',
@@ -444,13 +444,12 @@ export const DEMO_CASES: DemoCase[] = [
     input: '做个停车读书的场景，别太亮',
     entry: 'create',
     category: '休息与专注',
-    summary: '灯光、屏幕、低音量与腰部按摩；按摩模式标规划中。',
+    summary: '灯光、屏幕与低音量；按摩档位不在当前能力表里，不凑这一项。',
     conditions: [['挡位', '挡位P']],
     actions: [
       ['氛围灯亮度', '40%'],
       ['屏幕亮度', '30%'],
       ['音量', '0%'],
-      ['主驾座椅按摩模式', '腰部'],
     ],
   },
   {
@@ -471,7 +470,7 @@ export const DEMO_CASES: DemoCase[] = [
   {
     id: 'sun',
     title: '日晒后的片刻',
-    input: '做个暴晒后上车降温的场景',
+    input: '做个暴晒后降温的场景',
     entry: 'create',
     category: '空气与日晒',
     summary: '遮阳帘、座椅通风、温度和风量，不只重复灯光音量。',
@@ -518,10 +517,9 @@ export const DEMO_CASES: DemoCase[] = [
     input: '做个停车接人场景，打开左后门，后排暖一点',
     entry: 'create',
     category: '家庭乘坐',
-    summary: '左后门为规划中 B 级能力，停车确认后才可应用可用部分。',
+    summary: '车门在当前能力表里只作条件、不作动作，开门交给车控；场景保留后排加热与灯光。',
     conditions: [['挡位', '挡位P']],
     actions: [
-      ['左后门', '开启'],
       ['左后排座椅加热', '1挡'],
       ['氛围灯亮度', '60%'],
     ],

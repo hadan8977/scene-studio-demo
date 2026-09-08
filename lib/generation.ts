@@ -1,5 +1,10 @@
-import release from './data/p13-release.json' with { type: 'json' };
-import { requestEnvelope, adaptRevision, parseP13 } from './p13-adapter.ts';
+import release from './data/p36-release.json' with { type: 'json' };
+import {
+  requestEnvelope,
+  adaptRevision,
+  adaptCompletion,
+  parseAgentOutput,
+} from './agent-adapter.ts';
 import { validPreference } from './user-preferences.ts';
 
 import {
@@ -22,15 +27,35 @@ export const PROMPT_INFO = {
   sha256: release.sha256,
   registryVersion: release.registryVersion,
   model: release.model,
-  transport: 'deepseek-official',
+  transport: release.providers[0].via,
+  contract: release.contract,
 };
+
+/**
+ * 主用腾讯代理的 dsv4flash；只有它答不了时才回落到 DeepSeek 官网，
+ * 回落是同一模型家族的同一份冻结提示词，不换 prompt、不换能力表。
+ */
+function providers(key: string) {
+  return release.providers
+    .map((p, i) => ({
+      ...p,
+      // 各家读自己的环境变量；第一家没配就退回调用方传进来的密钥。
+      key: process.env[p.keyEnv] || (i === 0 ? key : undefined),
+    }))
+    .filter((p): p is typeof p & { key: string } => !!p.key);
+}
+
+/** 只要有任意一家的密钥就算接上了真实模型。 */
+export function generationConfigured() {
+  return release.providers.some((p) => !!process.env[p.keyEnv]);
+}
 export async function availableModels(
   _fetcher: typeof fetch = fetch,
 ): Promise<ModelOption[]> {
   return [
     {
       id: release.model,
-      name: 'DeepSeek V4 Flash · p13',
+      name: 'DeepSeek V4 Flash · p36',
       thinking: 'disabled',
       parameters: ['temperature', 'response_format', 'thinking'],
     },
@@ -158,31 +183,52 @@ export async function generate(
       content: JSON.stringify(requestEnvelope(input)),
     },
   ];
+  const route = providers(key);
+  let via = route[0].via;
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const body: Record<string, unknown> = {
-      // A format retry repeats the same frozen request, including its JSON envelope.
-      messages: baseMessages,
-      ...release.parameters,
-    };
-    const r = await fetcher(release.endpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      signal,
-    });
-    if (!r.ok)
-      throw new Error(
-        r.status === 401
+    let r: Response | null = null;
+    let failure: Error | null = null;
+    for (const provider of route) {
+      const body: Record<string, unknown> = {
+        // A format retry repeats the same frozen request, including its JSON envelope.
+        messages: baseMessages,
+        ...release.parameters,
+        model: provider.model,
+      };
+      let resp: Response;
+      try {
+        resp = await fetcher(provider.url, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${provider.key}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+          signal,
+        });
+      } catch (error) {
+        failure = new Error('模型服务连接失败，请稍后重试');
+        if (signal.aborted) throw error;
+        continue;
+      }
+      if (resp.ok) {
+        r = resp;
+        via = provider.via;
+        break;
+      }
+      failure = new Error(
+        resp.status === 401
           ? '模型密钥无效，请检查服务端配置'
-          : r.status === 402
+          : resp.status === 402
             ? '模型账户余额不足'
-            : r.status === 429
+            : resp.status === 429
               ? '模型服务繁忙，请稍后重试'
-              : `模型服务暂时不可用（${r.status}）`,
+              : `模型服务暂时不可用（${resp.status}）`,
       );
+      // 配额和故障才换供应商；密钥和余额换了也没用，直接报错。
+      if (resp.status === 401 || resp.status === 402) throw failure;
+    }
+    if (!r) throw failure || new Error('模型服务暂时不可用');
     if (!r.body) throw new Error('模型没有返回内容');
     const reader = r.body.getReader();
     const decoder = new TextDecoder();
@@ -240,7 +286,7 @@ export async function generate(
     }
     let parsed: Scene;
     try {
-      parsed = parseP13(JSON.parse(text.trim()));
+      parsed = parseAgentOutput(JSON.parse(text.trim()));
     } catch {
       if (attempt === 1) {
         tUnd = null;
@@ -257,9 +303,19 @@ export async function generate(
             adaptRevision(input.currentScene, parsed, input.input),
             input.input,
           )
-        : { scene: parsed, changed: [] };
+        : {
+            scene: input.currentScene?.clarify
+              ? adaptCompletion(input.currentScene, parsed)
+              : parsed,
+            changed: [],
+          };
     const result = {
-      ...validateScene(merged.scene, input.context, input.input),
+      ...validateScene(
+        merged.scene,
+        input.context,
+        input.input,
+        merged.changed,
+      ),
       changed: merged.changed,
     };
     emit({
@@ -275,6 +331,7 @@ export async function generate(
       model: model.id,
       provenance: {
         ...PROMPT_INFO,
+        via,
         locale: requestEnvelope(input).locale,
         adapter: input.currentScene ? 'partial-revision-v1' : 'envelope-v1',
         parameters: release.parameters,

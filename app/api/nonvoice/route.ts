@@ -1,4 +1,9 @@
-import { inputFrom, generate, type GenerationEvent } from '@/lib/generation';
+import {
+  inputFrom,
+  generate,
+  generationConfigured,
+  type GenerationEvent,
+} from '@/lib/generation';
 import { parseScene, validateScene } from '@/lib/scene';
 import { Part1Client, runtimeConfigured } from '@/lib/runtime-client';
 import { validEvidence } from '@/lib/nonvoice';
@@ -81,8 +86,12 @@ export async function POST(request: Request) {
       )
         throw Error('AI 改动了已确定的设置，已拒绝该结果');
     } else {
-      const key = process.env.DEEPSEEK_API_KEY;
-      if (!key)
+      // 各供应商在 generation 里各读各的环境变量，这里只是兜底的那一个。
+      const key =
+        process.env.DEEPSEEK_OFFICIAL_API_KEY ||
+        process.env.DEEPSEEK_API_KEY ||
+        '';
+      if (!generationConfigured())
         return Response.json(
           { error: 'AI 命名未连接，仍可使用当前名称保存。' },
           { status: 503 },

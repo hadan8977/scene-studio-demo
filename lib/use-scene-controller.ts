@@ -28,6 +28,7 @@ import {
   readPreferences,
   type UserPreference,
 } from '@/lib/user-preferences';
+import { apiUrl } from './base-path.ts';
 
 const initialContext: Context = { driving: false, profile: 'none' };
 type Source = 'live' | 'example';
@@ -85,7 +86,7 @@ export function useSceneController(initialExample = true) {
     setCatalogLoading(true);
     setCatalogError('');
     try {
-      const response = await fetch('/api/models');
+      const response = await fetch(apiUrl('/api/models'));
       if (!response.ok) throw new Error();
       const data = (await response.json()) as {
         models: ModelOption[];
@@ -258,7 +259,7 @@ export function useSceneController(initialExample = true) {
             '真实 AI 尚未连接。请先配置服务端密钥，再在评审面板刷新连接。',
           );
         if (!model) throw new Error('没有可用的候选模型，请在评审面板刷新。');
-        const response = await fetch('/api/generate', {
+        const response = await fetch(apiUrl('/api/generate'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
