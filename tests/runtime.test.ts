@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Part1Client, toProductResult, editScope } from '../lib/runtime-client.ts';
 import { emptyScene } from '../lib/scene.ts';
+import { toViewResult } from '../components/figma-make/bridge.ts';
 import type { GenerationEvent } from '../lib/generation.ts';
 
 const scene = { ...emptyScene(), name: '暖座', intent: 'action', understanding: '只调主驾座椅一挡', actions: [{ primary: '主驾座椅加热', secondary: '1挡' }] };
@@ -47,4 +48,28 @@ void test('one-item edits expose only the named device to the runtime', () => {
   const previous = { ...scene, actions: [{ primary: '氛围灯亮度', secondary: '20%' }, { primary: '主驾温度控制', secondary: '24℃' }] };
   assert.deepEqual(editScope('灯再暗一点', previous), ['氛围灯亮度']);
   assert.deepEqual(editScope('再改改', previous), []);
+});
+
+void test('runtime decisions carry the accepted value so the card does not list every item as unsupported', () => {
+  const raw = { ...reference, decisions: [{ status: 'accepted', reason: '通过当前注册表与值域校验', capability: '主驾座椅加热' }] };
+  const result = toProductResult(raw);
+  assert.equal(result.decisions[0].final, '1挡');
+  assert.equal(toViewResult(result).scene.unsupported.length, 0);
+});
+
+void test('a blocked capability drops its accepted twin and keeps both layers of reason on one row', () => {
+  const raw = { ...reference, valid: false, savable: false, scene: { ...scene, actions: [{ primary: '主驾车窗', secondary: '100%' }] },
+    decisions: [
+      { status: 'blocked', reason: '行驶中车窗最多20%', capability: '主驾车窗' },
+      { status: 'accepted', reason: '通过当前注册表与值域校验', capability: '主驾车窗' },
+      { status: 'blocked', reason: '输入注入检测命中', capability: null },
+      { status: 'blocked', reason: '输入有指令注入标记，不执行其任何片段', capability: null },
+    ] };
+  const result = toProductResult(raw);
+  assert.deepEqual(result.decisions.map((d) => d.primary), ['主驾车窗', '提案']);
+  assert.equal(result.decisions[0].status, 'forbidden');
+  assert.equal(result.decisions[1].reason, '输入注入检测命中；输入有指令注入标记，不执行其任何片段');
+  const view = toViewResult(result);
+  assert.equal(view.scene.unsupported.length, 2);
+  assert.equal(view.scene.blockReason, '行驶中车窗最多20%；输入注入检测命中；输入有指令注入标记，不执行其任何片段');
 });

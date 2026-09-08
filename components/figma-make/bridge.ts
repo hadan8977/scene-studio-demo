@@ -149,9 +149,22 @@ export function toViewResult(result: SceneResult): GenerationResult {
     })),
     clarify: raw.clarify ? { question: raw.clarify } : null,
     canSave: result.savable && !!raw.name.trim(),
+    // 卡片上逐项只显示「不允许 / 不支持」，拦下来的真正原因在 decisions 里。
+    // 不端上来，用户看到的就是一张存不下又不说为什么的卡片。
     blockReason: result.savable
       ? undefined
-      : raw.clarify || '请先补充有效动作或调整无法表达的触发条件。',
+      : raw.clarify ||
+        [
+          ...new Set(
+            result.decisions
+              .filter((d) => d.status === 'forbidden' && d.final === undefined)
+              .map((d) => d.reason)
+              .filter(Boolean),
+          ),
+        ]
+          .slice(0, 2)
+          .join('；') ||
+        '请先补充有效动作或调整无法表达的触发条件。',
   };
   return {
     scene,

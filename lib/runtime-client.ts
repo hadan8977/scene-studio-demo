@@ -65,29 +65,71 @@ export function toProductResult(raw: RawResult): SceneResult {
       SCENE_FIELDS.map((k) => [k, raw.scene[k as keyof Scene]]),
     ),
   );
-  // 技术服务是整条退回：只要有一项不合法，整个提案 valid=false。
-  // 界面上那就是一张有动作却存不下、也没说为什么的卡片。补一句说明。
-  if (!raw.valid && !scene.clarify)
-    scene.clarify =
-      '这次提案里有当前不允许的项，已整条退回，换个说法再试一次。';
+  // 技术服务的 decisions 只给能力名，不给取值。卡片那边靠 final 是否为空
+  // 判断「这一项没落地」，所以通过校验的项必须把取值回填回去，否则每张卡片
+  // 都会把自己刚生成的每一项列成「· 不支持」。
+  const valueOf = (name?: string | null) =>
+    !name
+      ? undefined
+      : (scene.actions.find((a) => a.primary === name)?.secondary ??
+        scene.conditions.find((c) => c.primary === name)?.secondary);
+  // 同一项被拦时，技术服务会先记一条 blocked、再记一条 accepted（前者来自
+  // 执行策略，后者来自值域校验）。两条都渲染就是「不允许」和「不支持」并列，
+  // 自相矛盾。被拦的能力只留拦截那条。
+  const blocked = new Set(
+    raw.decisions
+      .filter((d) => d.status === 'blocked' && d.capability)
+      .map((d) => d.capability as string),
+  );
+  // 同一项还可能被两层各拦一次（注入检测就是命中标记与命中规则各记一条）。
+  // 卡片上只显示能力名，两条会变成一模一样的两行，原因合并成一条。
+  const merged = new Map<string, string[]>();
+  for (const d of raw.decisions)
+    if (d.status === 'blocked') {
+      const key = d.capability || '提案';
+      const reasons = merged.get(key) || [];
+      if (!reasons.includes(d.reason)) reasons.push(d.reason);
+      merged.set(key, reasons);
+    }
+  const emitted = new Set<string>();
+  const decisions = raw.decisions
+    .filter((d) => {
+      if (d.status !== 'blocked')
+        return !d.capability || !blocked.has(d.capability);
+      const key = d.capability || '提案';
+      if (emitted.has(key)) return false;
+      emitted.add(key);
+      return true;
+    })
+    .map((d) => {
+      const status =
+        d.status === 'blocked'
+          ? ('forbidden' as const)
+          : d.status === 'planned'
+            ? ('planned' as const)
+            : ('accepted' as const);
+      const value = valueOf(d.capability);
+      const key = d.capability || '提案';
+      return {
+        primary: key,
+        original: value ?? '',
+        // 只有被拦的项留空 final，卡片据此把它列进「没落地」那一栏。
+        final: status === 'forbidden' ? undefined : value,
+        status,
+        reason:
+          status === 'forbidden'
+            ? (merged.get(key) || [d.reason]).join('；')
+            : d.reason,
+        kind: 'other' as const,
+      };
+    });
   return {
     scene,
     savable: raw.savable && raw.valid,
     conceptual: raw.decisions.some((d) => d.status === 'planned'),
     changed: [],
     memoryUsed: [],
-    decisions: raw.decisions.map((d) => ({
-      primary: d.capability || '提案',
-      original: '',
-      status:
-        d.status === 'blocked'
-          ? 'forbidden'
-          : d.status === 'planned'
-            ? 'planned'
-            : 'accepted',
-      reason: d.reason,
-      kind: 'other',
-    })),
+    decisions,
     runtime: {
       proposalId: raw.proposal_id,
       registryRevision: raw.registry_revision,
